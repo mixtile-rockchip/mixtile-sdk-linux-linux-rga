@@ -52,6 +52,7 @@ using namespace android;
 #endif
 
 #define MAX(n1, n2) ((n1) > (n2) ? (n1) : (n2))
+#define MIN(n1, n2) ((n1) < (n2) ? (n1) : (n2))
 #define GET_GCD(n1, n2) \
     ({ \
         int i; \
@@ -68,6 +69,265 @@ using namespace android;
 #define M_PI 3.14159265358979323846
 #endif
 #endif
+
+union rga2_cfa_ctrl0 {
+    uint32_t value;
+    struct {
+        uint32_t reserved:1;            // 0
+        uint32_t sw_cfa_bcsh_lut_en:1;  // 1
+        uint32_t sw_cfa_midflt_en:1;    // 2
+        uint32_t sw_cfa_highpass_en:1;  // 3
+        uint32_t sw_cfa_panel_mode:1;   // 4
+        uint32_t sw_cfa_c2p_id:3;       // 7:5
+        uint32_t sw_cfa_r2y_mode:2;     // 9:8
+        uint32_t sw_cfa_r2y_clip:1;     // 10
+        uint32_t reserved1:1;           // 11
+        uint32_t sw_cfa_sat_gain:8;     // 19:12
+    } bits;
+};
+
+union rga2_cfa_ctrl1 {
+    uint32_t value;
+    struct {
+        uint32_t sw_cfa_dither_en:1;        // 0
+        uint32_t sw_cfa_modulate_lps_en:1;  // 1
+        uint32_t sw_cfa_modulate_hps_en:1;  // 2
+        uint32_t sw_cfa_modulate_err_en:1;  // 3
+        uint32_t sw_cfa_cfa_mode:2;         // 5:4
+        uint32_t sw_cfa_clr_low4bit_en:1;   // 6
+        uint32_t sw_cfa_comps_en:1;         // 7
+        uint32_t sw_cfa_out_fmt:2;          // 9:8
+        uint32_t sw_cfa_pat_out_en:1;       // 10
+        uint32_t reserved:5;                // 15:11
+        uint32_t sw_cfa_sharp_level:7;      // 22:16
+        uint32_t reserved1:1;               // 23
+        uint32_t sw_cfa_comps_level:6;      // 29:24
+    } bits;
+};
+
+union rga2_cfa_edcoef05 {
+    uint32_t value;
+    struct {
+        uint32_t sw_cfa_dither_coe0:5;   // 4:0
+        uint32_t sw_cfa_dither_coe1:5;   // 9:5
+        uint32_t sw_cfa_dither_coe2:5;   // 14:10
+        uint32_t sw_cfa_dither_coe3:5;   // 19:15
+        uint32_t sw_cfa_dither_coe4:5;   // 24:20
+        uint32_t sw_cfa_dither_coe5:5;   // 29:25
+    } bits;
+};
+
+union rga2_cfa_edcoef6b {
+    uint32_t value;
+    struct {
+        uint32_t sw_cfa_dither_coe6:5;   // 4:0
+        uint32_t sw_cfa_dither_coe7:5;   // 9:5
+        uint32_t sw_cfa_dither_coe8:5;   // 14:10
+        uint32_t sw_cfa_dither_coe9:5;   // 19:15
+        uint32_t sw_cfa_dither_coe10:5;  // 24:20
+        uint32_t sw_cfa_dither_coe11:5;  // 29:25
+    } bits;
+};
+
+union rga2_cfa_apattern {
+    uint32_t value;
+    struct {
+        uint32_t sw_cfa_c2p_apattern0:2;  // 1:0
+        uint32_t sw_cfa_c2p_apattern1:2;  // 3:2
+        uint32_t sw_cfa_c2p_apattern2:2;  // 5:4
+        uint32_t sw_cfa_c2p_apattern3:2;  // 7:6
+        uint32_t sw_cfa_c2p_apattern4:2;  // 9:8
+        uint32_t sw_cfa_c2p_apattern5:2;  // 11:10
+        uint32_t sw_cfa_c2p_apattern6:2;  // 13:12
+        uint32_t sw_cfa_c2p_apattern7:2;  // 15:14
+        uint32_t sw_cfa_c2p_apattern8:2;  // 17:16
+        uint32_t sw_cfa_c2p_apattern9:2;  // 19:18
+        uint32_t sw_cfa_c2p_apattern10:2; // 21:20
+        uint32_t sw_cfa_c2p_apattern11:2; // 23:22
+        uint32_t sw_cfa_c2p_apattern12:2; // 25:24
+        uint32_t sw_cfa_c2p_apattern13:2; // 27:26
+        uint32_t sw_cfa_c2p_apattern14:2; // 29:28
+        uint32_t sw_cfa_c2p_apattern15:2; // 31:30
+    } bits;
+};
+
+enum RGA2_CFA_PANEL_MODE {
+    RGA2_CFA_PATTERN_GRAY_PANEL = 0,
+    RGA2_CFA_PATTERN_COLOR_PANEL = 1,
+};
+
+enum RGA2_CFA_C2P_ID {
+    RGA2_CFA_C2P_ID_3x3 = 0,
+    RGA2_CFA_C2P_ID_2x6 = 1,
+    RGA2_CFA_C2P_ID_2x2 = 2,
+    RGA2_CFA_C2P_ID_GRAY = 3,
+};
+
+enum RGA2_CFA_APATTERN {
+    RGA2_CFA_APATTERN_R = 0,
+    RGA2_CFA_APATTERN_G = 1,
+    RGA2_CFA_APATTERN_B = 2,
+    RGA2_CFA_APATTERN_W = 3,
+};
+
+enum RGA2_CFA_R2Y_MODE {
+    RGA2_CFA_R2Y_MODE_BT601_FULL_RANGE = 0,
+    RGA2_CFA_R2Y_MODE_BT601_LIMIT_RANGE = 1,
+    RGA2_CFA_R2Y_MODE_BT709_LIMIT_RANGE = 2,
+};
+
+enum RGA2_CFA_MODE {
+    RGA2_CFA_MODE_NORMAL = 0,
+    RGA2_CFA_MODE_REGAL = 1,
+    RGA2_CFA_MODE_A2 = 2,
+};
+
+enum RGA2_CFA_OUT_FMT {
+    RGA2_CFA_8BIT = 0,
+    RGA2_CFA_4BIT = 1,
+    RGA2_CFA_1BIT = 2,
+};
+
+struct rga_cfa_c2p_info {
+    IM_CFA_PATTERN pattern;
+    uint8_t panel_mode;
+    uint8_t c2p_id;
+    union rga2_cfa_apattern apattern;
+    uint32_t dither_coe05;
+    uint32_t dither_coe6b;
+    const char* name;
+};
+
+const struct rga_cfa_c2p_info g_pattern_table[] = {
+    {
+        .pattern = IM_CFA_PATTERN_GRAY,
+        .panel_mode = RGA2_CFA_PATTERN_GRAY_PANEL,
+        .c2p_id = RGA2_CFA_C2P_ID_GRAY,
+        .apattern = (union rga2_cfa_apattern){ .value = 0 },
+        .dither_coe05 = 0x4A3000E,
+        .dither_coe6b = 0x0,
+        .name = "Gray"
+    },
+    {
+        .pattern = IM_CFA_PATTERN_3x3_RGBGBRBRG,
+        .panel_mode = RGA2_CFA_PATTERN_COLOR_PANEL,
+        .c2p_id = RGA2_CFA_C2P_ID_3x3,
+        .apattern = (union rga2_cfa_apattern){
+            .bits = {
+                .sw_cfa_c2p_apattern0 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern1 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern2 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern3 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern4 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern5 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern6 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern7 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern8 = RGA2_CFA_APATTERN_G,
+            },
+        },
+        .dither_coe05 = 0x6338443,
+        .dither_coe6b = 0x2310444,
+        .name = "3x3_RGBGBRBRG"
+    },
+    {
+        .pattern = IM_CFA_PATTERN_3x3_GBRBRGRGB,
+        .panel_mode = RGA2_CFA_PATTERN_COLOR_PANEL,
+        .c2p_id = RGA2_CFA_C2P_ID_3x3,
+        .apattern = (union rga2_cfa_apattern){
+            .bits = {
+                .sw_cfa_c2p_apattern0 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern1 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern2 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern3 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern4 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern5 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern6 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern7 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern8 = RGA2_CFA_APATTERN_B,
+            },
+        },
+        .dither_coe05 = 0x6338443,
+        .dither_coe6b = 0x2310444,
+        .name = "3x3_GBRBRGRGB"
+    },
+    {
+        .pattern = IM_CFA_PATTERN_3x3_RBGGRBBGR,
+        .panel_mode = RGA2_CFA_PATTERN_COLOR_PANEL,
+        .c2p_id = RGA2_CFA_C2P_ID_3x3,
+        .apattern = (union rga2_cfa_apattern){
+            .bits = {
+                .sw_cfa_c2p_apattern0 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern1 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern2 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern3 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern4 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern5 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern6 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern7 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern8 = RGA2_CFA_APATTERN_R,
+            },
+        },
+        .dither_coe05 = 0xE411043,
+        .dither_coe6b = 0x4110C21,
+        .name = "3x3_RBGGRBBGR"
+    },
+    {
+        .pattern = IM_CFA_PATTERN_2x2_BWGR,
+        .panel_mode = RGA2_CFA_PATTERN_COLOR_PANEL,
+        .c2p_id = RGA2_CFA_C2P_ID_2x2,
+        .apattern = (union rga2_cfa_apattern){
+            .bits = {
+                .sw_cfa_c2p_apattern0 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern1 = RGA2_CFA_APATTERN_W,
+                .sw_cfa_c2p_apattern2 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern3 = RGA2_CFA_APATTERN_R,
+            },
+        },
+        .dither_coe05 = 0x44104A4,
+        .dither_coe6b = 0x6128461,
+        .name = "2x2_BWGR"
+    },
+    {
+        .pattern = IM_CFA_PATTERN_2x2_RGWB,
+        .panel_mode = RGA2_CFA_PATTERN_COLOR_PANEL,
+        .c2p_id = RGA2_CFA_C2P_ID_2x2,
+        .apattern = (union rga2_cfa_apattern){
+            .bits = {
+                .sw_cfa_c2p_apattern0 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern1 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern2 = RGA2_CFA_APATTERN_W,
+                .sw_cfa_c2p_apattern3 = RGA2_CFA_APATTERN_B,
+            },
+        },
+        .dither_coe05 = 0x44104A4,
+        .dither_coe6b = 0x6128461,
+        .name = "2x2_RGWB"
+    },
+    {
+        .pattern = IM_CFA_PATTERN_2x6_GBBRRGRRGGBB,
+        .panel_mode = RGA2_CFA_PATTERN_COLOR_PANEL,
+        .c2p_id = RGA2_CFA_C2P_ID_2x6,
+        .apattern = (union rga2_cfa_apattern){
+            .bits = {
+                .sw_cfa_c2p_apattern0 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern1 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern2 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern3 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern4 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern5 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern6 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern7 = RGA2_CFA_APATTERN_R,
+                .sw_cfa_c2p_apattern8 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern9 = RGA2_CFA_APATTERN_G,
+                .sw_cfa_c2p_apattern10 = RGA2_CFA_APATTERN_B,
+                .sw_cfa_c2p_apattern11 = RGA2_CFA_APATTERN_B,
+            },
+        },
+        .dither_coe05 = 0xAB2800B,
+        .dither_coe6b = 0x0,
+        .name = "2x6_GBBRRGRRGGBB"
+    },
+};
 
 RGA_THREAD_LOCAL im_context_t g_im2d_context;
 
@@ -1348,17 +1608,20 @@ IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_bu
         if (ret != IM_STATUS_NOERROR)
             return ret;
     }
-    ret = rga_check_info("dst", dst, dst_rect, rga_info->output_resolution);
-    if (ret != IM_STATUS_NOERROR)
-        return ret;
-    ret = rga_check_format("dst", dst, dst_rect, rga_info->output_format, mode_usage);
-    if (ret != IM_STATUS_NOERROR)
-        return ret;
-    ret = rga_check_align("dst", dst, rga_info->byte_stride, false);
-    if (ret != IM_STATUS_NOERROR)
-        return ret;
 
-    if ((~mode_usage & IM_COLOR_FILL)) {
+    if (~~mode_usage & IM_UPDATE_LUT) {
+        ret = rga_check_info("dst", dst, dst_rect, rga_info->output_resolution);
+        if (ret != IM_STATUS_NOERROR)
+            return ret;
+        ret = rga_check_format("dst", dst, dst_rect, rga_info->output_format, mode_usage);
+        if (ret != IM_STATUS_NOERROR)
+            return ret;
+        ret = rga_check_align("dst", dst, rga_info->byte_stride, false);
+        if (ret != IM_STATUS_NOERROR)
+            return ret;
+    }
+
+    if ((~mode_usage & (IM_COLOR_FILL & IM_UPDATE_LUT))) {
         ret = rga_check_limit(src, dst, rga_info->scale_limit, mode_usage);
         if (ret != IM_STATUS_NOERROR)
             return ret;
@@ -1553,6 +1816,7 @@ IM_STATUS rga_get_opt(im_opt_t *opt, void *ptr) {
 int generate_blit_req(struct rga_req *ioc_req, rga_info_t *src, rga_info_t *dst, rga_info_t *src1);
 int generate_fill_req(struct rga_req *ioc_req, rga_info_t *dst);
 int generate_color_palette_req(struct rga_req *ioc_req, rga_info_t *src, rga_info_t *dst, rga_info_t *lut);
+int generate_update_lut_req(struct rga_req *ioc_req, rga_info_t *lut);
 
 void generate_gaussian_kernel(double sigma_x, double sigma_y, im_size_t ksize, double *kernel) {
     int i, j;
@@ -1804,6 +2068,165 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
     return mode;
 }
 
+static const struct rga_cfa_c2p_info *rga_cfa_get_c2p_info(uint32_t pattern) {
+    for (int i = 0; i < sizeof(g_pattern_table) / sizeof((g_pattern_table)[0]); i++) {
+        if (g_pattern_table[i].pattern == pattern)
+            return (struct rga_cfa_c2p_info *)&g_pattern_table[i];
+    }
+
+    return NULL;
+}
+
+static uint32_t rga_cfa_get_pattern_mode(uint32_t pattern) {
+    switch (pattern) {
+        case IM_CFA_PATTERN_GRAY:
+            return RGA2_CFA_PATTERN_GRAY_PANEL;
+        case IM_CFA_PATTERN_3x3_RGBGBRBRG:
+        case IM_CFA_PATTERN_3x3_GBRBRGRGB:
+        case IM_CFA_PATTERN_3x3_RBGGRBBGR:
+        case IM_CFA_PATTERN_2x2_BWGR:
+        case IM_CFA_PATTERN_2x2_RGWB:
+        case IM_CFA_PATTERN_2x6_GBBRRGRRGGBB:
+            return RGA2_CFA_PATTERN_COLOR_PANEL;
+        default:
+            return RGA2_CFA_PATTERN_GRAY_PANEL;
+    }
+}
+
+static enum RGA2_CFA_MODE rga_cfa_get_mode(uint32_t type) {
+    switch (type) {
+        case IM_CFA_TYPE_REGAL:
+            return RGA2_CFA_MODE_REGAL;
+        case IM_CFA_TYPE_A2:
+            return RGA2_CFA_MODE_A2;
+        case IM_CFA_TYPE_DEFAULT:
+        default:
+            return RGA2_CFA_MODE_NORMAL;
+    }
+}
+
+static int rga_generate_cfa_config(struct rga_req *req, rga_buffer_t *src, rga_buffer_t *dst, im_cfa_t *cfa) {
+    union rga2_cfa_ctrl0 ctrl0;
+    union rga2_cfa_ctrl1 ctrl1;
+    union rga2_cfa_edcoef05 dither_coe_05;
+    union rga2_cfa_edcoef6b dither_coe_6b;
+    union rga2_cfa_apattern a2_pattern;
+
+    const struct rga_cfa_c2p_info *c2p_info;
+
+    if (cfa == NULL) {
+        IM_LOGW("cfa is null!");
+        return IM_STATUS_FAILED;
+    }
+
+    memset(&ctrl0, 0, sizeof(ctrl0));
+    memset(&ctrl1, 0, sizeof(ctrl1));
+    memset(&dither_coe_05, 0, sizeof(dither_coe_05));
+    memset(&dither_coe_6b, 0, sizeof(dither_coe_6b));
+    memset(&a2_pattern, 0, sizeof(a2_pattern));
+
+    c2p_info = rga_cfa_get_c2p_info(cfa->pattern);
+    if (c2p_info == NULL) {
+        IM_LOGW("Unsupported cfa pattern[%#x]!", cfa->pattern);
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    a2_pattern.value = c2p_info->apattern.value;
+    dither_coe_05.value = c2p_info->dither_coe05;
+    dither_coe_6b.value = c2p_info->dither_coe6b;
+
+    /* pre-process */
+    ctrl0.bits.sw_cfa_bcsh_lut_en = cfa->bcsh_en ? true : false;
+    ctrl0.bits.sw_cfa_midflt_en = (cfa->filter & IM_CFA_FILTER_MEDIAN) ? true : false;
+    ctrl0.bits.sw_cfa_highpass_en = (cfa->filter & IM_CFA_FILTER_HIGH_PASS) ? true : false;
+    ctrl0.bits.sw_cfa_panel_mode = c2p_info->panel_mode;
+    ctrl0.bits.sw_cfa_c2p_id = c2p_info->c2p_id;
+    if (is_rgb_format(src->format)) {
+        switch (src->color_space_mode) {
+            case IM_RGB_FULL:
+                ctrl0.bits.sw_cfa_r2y_clip = false;
+                break;
+            case IM_RGB_CLIP:
+                ctrl0.bits.sw_cfa_r2y_clip = true;
+                break;
+            default:
+                ctrl0.bits.sw_cfa_r2y_clip = false;
+                break;
+        }
+
+        switch (dst->color_space_mode) {
+            case IM_YUV_BT601_LIMIT_RANGE:
+                ctrl0.bits.sw_cfa_r2y_mode = RGA2_CFA_R2Y_MODE_BT601_LIMIT_RANGE;
+                break;
+            case IM_YUV_BT601_FULL_RANGE:
+                ctrl0.bits.sw_cfa_r2y_mode = RGA2_CFA_R2Y_MODE_BT601_FULL_RANGE;
+                break;
+            case IM_YUV_BT709_LIMIT_RANGE:
+                ctrl0.bits.sw_cfa_r2y_mode = RGA2_CFA_R2Y_MODE_BT709_LIMIT_RANGE;
+                break;
+            default:
+                ctrl0.bits.sw_cfa_r2y_mode = RGA2_CFA_R2Y_MODE_BT601_LIMIT_RANGE;
+                break;
+        }
+    } else {
+        // unused
+        ctrl0.bits.sw_cfa_r2y_mode = 0;
+        ctrl0.bits.sw_cfa_r2y_clip = 0;
+    }
+
+    ctrl0.bits.sw_cfa_sat_gain = (int8_t)(64 - MIN(cfa->saturation_gain, 128)); // [-64, 64]
+
+    /* post-process */
+    ctrl1.bits.sw_cfa_dither_en = (cfa->dither & IM_CFA_DITHER_FLAG_ENABLE) ? 1 : 0;
+    ctrl1.bits.sw_cfa_modulate_lps_en = (cfa->filter & IM_CFA_A2_MODULATE_LPS) ? true : false;
+    ctrl1.bits.sw_cfa_modulate_hps_en = (cfa->filter & IM_CFA_A2_MODULATE_HPS) ? true : false;
+    ctrl1.bits.sw_cfa_modulate_err_en = (cfa->filter & IM_CFA_A2_MODULATE_ERR) ? true : false;
+    ctrl1.bits.sw_cfa_cfa_mode = rga_cfa_get_mode(cfa->type);
+    ctrl1.bits.sw_cfa_clr_low4bit_en = (cfa->dither & IM_CFA_DITHER_FLAG_CLEAR_LOW_4BITS) ? true : false;
+    ctrl1.bits.sw_cfa_comps_en = (cfa->comps_level > 0 && cfa->src1_handle > 0 && cfa->dst1_handle > 0) ? true : false;
+    ctrl1.bits.sw_cfa_pat_out_en = cfa->dst1_handle > 0 ? true : false;
+    switch (dst->format) {
+        case RK_FORMAT_Y4:
+            ctrl1.bits.sw_cfa_out_fmt = RGA2_CFA_4BIT;
+            break;
+        case RK_FORMAT_Y1:
+            ctrl1.bits.sw_cfa_out_fmt = RGA2_CFA_1BIT;
+            break;
+        case RK_FORMAT_Y8:
+        default:
+            ctrl1.bits.sw_cfa_out_fmt = RGA2_CFA_8BIT;
+            break;
+    }
+    ctrl1.bits.sw_cfa_sharp_level = MIN(cfa->sharpen_gain, 128); // [0, 128]
+    ctrl1.bits.sw_cfa_comps_level = MIN(cfa->comps_level, 128) >> 1; // [0, 64]
+
+    req->cfa_enable = true;
+
+    req->cfa_ctrl0 = ctrl0.value;
+    req->cfa_ctrl1 = ctrl1.value;
+    req->cfa_apattern = a2_pattern.value;
+    req->cfa_dither_coe05 = dither_coe_05.value;
+    req->cfa_dither_coe6b = dither_coe_6b.value;
+
+    switch (cfa->type) {
+        case IM_CFA_TYPE_REGAL:
+        case IM_CFA_TYPE_DEFAULT:
+            if (ctrl1.bits.sw_cfa_pat_out_en)
+                    req->pattern_handle = cfa->dst1_handle;
+
+            break;
+        case IM_CFA_TYPE_A2:
+            if (ctrl1.bits.sw_cfa_comps_en) {
+                    req->comps_handle = cfa->src1_handle;
+                    req->pattern_handle = cfa->dst1_handle;
+            }
+
+            break;
+    }
+
+    return IM_STATUS_SUCCESS;
+}
+
 IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                           im_rect srect, im_rect drect, im_rect prect,
                           int acquire_fence_fd, int *release_fence_fd,
@@ -1842,6 +2265,8 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
 
     if (usage & IM_COLOR_FILL) {
         ret = rga_set_buffer_info("dst", dst, &dstinfo);
+    } else if (usage & IM_UPDATE_LUT) {
+        ret = rga_set_buffer_info("lut", src, &srcinfo);
     } else {
         ret = rga_set_buffer_info("src", src, &srcinfo);
         ret = rga_set_buffer_info("dst", dst, &dstinfo);
@@ -2288,9 +2713,13 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
         dstinfo.color = opt.color;
 
         ret = generate_fill_req(&req, &dstinfo);
+    } else if (usage & IM_UPDATE_LUT) {
+        ret = generate_update_lut_req(&req, &srcinfo);
     } else if (usage & IM_COLOR_PALETTE) {
         ret = generate_color_palette_req(&req, &srcinfo, &dstinfo, &patinfo);
-    } else if ((usage & IM_ALPHA_BLEND_MASK) && rga_is_buffer_valid(pat)) {
+    } else if (((usage & IM_ALPHA_BLEND_MASK) ||
+                (usage & IM_CFA)) &&
+               rga_is_buffer_valid(pat)) {
         ret = generate_blit_req(&req, &srcinfo, &dstinfo, &patinfo);
     } else {
         ret = generate_blit_req(&req, &srcinfo, &dstinfo, NULL);
@@ -2305,6 +2734,9 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
         ret = IM_STATUS_FAILED;
         goto release_resource;
     }
+
+    if (usage & IM_CFA)
+        rga_generate_cfa_config(&req, &src, &dst, &opt_ptr->cfa_config);
 
     if (job_handle > 0) {
         im_rga_job_t *job = NULL;
@@ -4524,3 +4956,193 @@ int generate_color_palette_req(struct rga_req *ioc_req, rga_info_t *src, rga_inf
     return 0;
 }
 
+int generate_update_lut_req(struct rga_req *ioc_req, rga_info_t *lut) {
+    int lutVirW ,lutVirH ,lutActW ,lutActH ,lutXPos ,lutYPos;
+    int lutType ,lutMmuFlag;
+    int lutFd = -1;
+    int ret = 0;
+    rga_rect_t relLutRect, tmpLutRect;
+    struct rga_req rgaReg;
+    void *lutBuf = NULL;
+    RECT clip;
+
+    rga_session_t *session;
+
+    session = get_rga_session();
+    if (IS_ERR(session))
+        return (IM_STATUS)PTR_ERR(session);
+
+    //init
+    memset(&rgaReg, 0, sizeof(struct rga_req));
+    rgaReg.feature.user_close_fence = true;
+
+    lutType = lutMmuFlag = 0;
+
+#if NORMAL_API_LOG_EN
+    /* print debug log by setting property vendor.rga.log as 1 */
+    is_debug_log();
+    if(is_out_log())
+    ALOGD("<<<<-------- print rgaLog -------->>>>");
+#endif
+
+     /* get effective area from src、dst and lut, if the area is empty, choose to get parameter from handle. */
+    if (lut)
+        memcpy(&relLutRect, &lut->rect, sizeof(rga_rect_t));
+
+    lutFd = -1;
+
+#if NORMAL_API_LOG_EN
+    if(is_out_log()) {
+        ALOGD("lut->hnd = 0x%lx \n", (unsigned long)lut->hnd);
+        ALOGD("lut: Fd = %.2d , phyAddr = %p , virAddr = %p\n",lut->fd,lut->phyAddr,lut->virAddr);
+    }
+#endif
+
+    if (lut->handle > 0)
+        /* This will mark the use of handle */
+        rgaReg.handle_flag |= 1;
+
+    /*********** get lut addr *************/
+    if (lut && lut->handle) {
+        /* In order to minimize changes, the handle here will reuse the variable of Fd. */
+        lutFd = lut->handle;
+    } else if (lut && lut->phyAddr) {
+        lutBuf = lut->phyAddr;
+    } else if (lut && lut->fd > 0) {
+        lutFd = lut->fd;
+        lut->mmuFlag = 1;
+    } else if (lut && lut->virAddr) {
+        lutBuf = lut->virAddr;
+        lut->mmuFlag = 1;
+    }
+#ifdef ANDROID
+    else if (lut && lut->hnd) {
+#ifndef RK3188
+        /* RK3188 is special, cannot configure rga through fd. */
+        RkRgaGetHandleFd(lut->hnd, &lutFd);
+#endif
+#ifndef ANDROID_8
+        if (lutFd < 0 || lutFd == 0) {
+            RkRgaGetHandleMapAddress(lut->hnd, &lutBuf);
+        }
+#endif
+        if ((lutFd < 0 || lutFd == 0) && lutBuf == NULL) {
+            ALOGE("No lut address,not using update palette table mode.\n");
+            printf("No lut address,not using update palette table mode.\n");
+        }
+        else {
+            lutType = 1;
+        }
+
+        ALOGD("lut->mmuFlag = %d", lut->mmuFlag);
+    }
+
+    if (!isRectValid(relLutRect)) {
+        ret = NormalRgaGetRect(lut->hnd, &tmpLutRect);
+        if (ret) {
+            ALOGE("lut handleGetRect fail ,ret = %d,hnd=%p", ret, &lut->hnd);
+            printf("lut handleGetRect fail ,ret = %d,hnd=%p", ret, &lut->hnd);
+        }
+        memcpy(&relLutRect, &tmpLutRect, sizeof(rga_rect_t));
+    }
+#endif
+
+    /* Old rga driver cannot support fd as zero. */
+    if (lutFd == 0)
+        lutFd = -1;
+
+#if NORMAL_API_LOG_EN
+    if(is_out_log()) {
+        ALOGD("lut: Fd = %.2d , buf = %p, mmuFlag = %d, mmuType = %d\n", lutFd, lutBuf, lut->mmuFlag, lutType);
+    }
+#endif
+
+    relLutRect.format = RkRgaCompatibleFormat(relLutRect.format);
+
+
+    /* do some check, check the area of LUT whether is effective. */
+    if (lut) {
+        ret = checkRectForRga(relLutRect);
+        if (ret) {
+            printf("Error lutRect\n");
+            ALOGE("[%s,%d]Error lutRect \n", __func__, __LINE__);
+            return ret;
+        }
+    }
+
+    lutVirW = relLutRect.wstride;
+    lutVirH = relLutRect.hstride;
+    lutXPos = relLutRect.xoffset;
+    lutYPos = relLutRect.yoffset;
+    lutActW = relLutRect.width;
+    lutActH = relLutRect.height;
+
+    switch (session->driver_type) {
+        case RGA_DRIVER_IOC_RGA2:
+        case RGA_DRIVER_IOC_MULTI_RGA:
+        default:
+            if (lut && lut->hnd)
+                lutMmuFlag = lutType ? 1 : 0;
+            if (lut && lutBuf == lut->virAddr)
+                lutMmuFlag = 1;
+            if (lut && lutBuf == lut->phyAddr)
+                lutMmuFlag = 0;
+            if (lutFd != -1)
+                lutMmuFlag = lutType ? 1 : 0;
+            if (lut && lutFd == lut->fd)
+                lutMmuFlag = lut->mmuFlag ? 1 : 0;
+
+    #if defined(__arm64__) || defined(__aarch64__)
+            NormalRgaSetPatVirtualInfo(&rgaReg, lutFd != -1 ? lutFd : 0,
+                                    (unsigned long)lutBuf,
+                                    (unsigned long)lutBuf + lutVirW * lutVirH,
+                                    lutVirW, lutVirH, &clip,
+                                    RkRgaGetRgaFormat(relLutRect.format),0);
+    #else
+            NormalRgaSetPatVirtualInfo(&rgaReg, lutFd != -1 ? lutFd : 0,
+                                    (unsigned int)lutBuf,
+                                    (unsigned int)lutBuf + lutVirW * lutVirH,
+                                    lutVirW, lutVirH, &clip,
+                                    RkRgaGetRgaFormat(relLutRect.format),0);
+
+    #endif
+            break;
+    }
+
+    /* set effective area of LUT. */
+    NormalRgaSetPatActiveInfo(&rgaReg, lutActW, lutActH, lutXPos, lutYPos);
+
+    if (lutMmuFlag) {
+        NormalRgaMmuInfo(&rgaReg, 1, 0, 0, 0, 0, 2);
+        /*set lut mmu_flag*/
+        if (lutMmuFlag) {
+            rgaReg.mmu_info.mmu_flag |= (0x1 << 11);
+            rgaReg.mmu_info.mmu_flag |= (0x1 << 9);
+        }
+
+    }
+
+#if NORMAL_API_LOG_EN
+    if(is_out_log()) {
+        ALOGD("lutMmuFlag = %d\n", lutMmuFlag);
+        ALOGD("<<<<-------- rgaReg -------->>>>\n");
+        NormalRgaLogOutRgaReq(rgaReg);
+    }
+#endif
+
+    /* rga3 rd_mode */
+    /* If rd_mode is not configured, raster mode is executed by default. */
+    if (lut)
+        rgaReg.pat.rd_mode = lut->rd_mode ? lut->rd_mode : raster_mode;
+
+    rgaReg.in_fence_fd = lut->in_fence_fd;
+    rgaReg.core = lut->core;
+    rgaReg.priority = lut->priority;
+
+    rgaReg.fading.g = 0xff;
+    rgaReg.render_mode = update_palette_table_mode;
+
+    memcpy(ioc_req, &rgaReg, sizeof(rgaReg));
+
+    return 0;
+}

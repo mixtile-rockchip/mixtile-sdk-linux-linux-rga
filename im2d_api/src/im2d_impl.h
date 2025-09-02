@@ -51,6 +51,15 @@
     RGA_SET_VERSION(RGA_API_MAJOR_VERSION, RGA_API_MINOR_VERSION, RGA_API_REVISION_VERSION) \
     )
 
+#define IM_USAGE_BIT_MASK(index)  (1ULL << (index))
+
+typedef enum {
+    IM_USAGE_INDEX_CFA = 32,
+    IM_USAGE_INDEX_UPDATE_LUT,
+} IM_USAGE_INDEX;
+
+#define IM_CFA          IM_USAGE_BIT_MASK(IM_USAGE_INDEX_CFA)
+#define IM_UPDATE_LUT   IM_USAGE_BIT_MASK(IM_USAGE_INDEX_UPDATE_LUT)
 
 typedef struct rga_version_check_ops {
     IM_STATUS (*get_current_index_failed)(struct rga_version_t current, struct rga_version_t minimum);

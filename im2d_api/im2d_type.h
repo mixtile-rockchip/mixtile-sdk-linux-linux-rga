@@ -257,6 +257,42 @@ typedef enum {
     IM_CONTEXT_DST_CACHE_INFO   = 0x1 << 5,
 } IM_CONTEXT_FLAGS;
 
+/* CFA */
+typedef enum {
+    IM_CFA_TYPE_DEFAULT = 0,
+    IM_CFA_TYPE_REGAL,
+    IM_CFA_TYPE_A2,
+} IM_CFA_TYPE;
+
+typedef enum {
+    IM_CFA_PATTERN_GRAY = 0,                /* grayscale */
+    IM_CFA_PATTERN_3x3_RGBGBRBRG = 0x1000,  /* 3x3 CFA pattern: RGB; GBR; BRG */
+    IM_CFA_PATTERN_3x3_GBRBRGRGB,           /* 3x3 CFA pattern: GBR; BRG; RGB */
+    IM_CFA_PATTERN_3x3_RBGGRBBGR,           /* 3x3 CFA pattern: RBG; GRB; BGR */
+
+    IM_CFA_PATTERN_2x2_BWGR = 0x2000,       /* 2x2 CFA pattern: BW; GR */
+    IM_CFA_PATTERN_2x2_RGWB,                /* 2x2 CFA pattern: RG; WB */
+
+    IM_CFA_PATTERN_2x6_GBBRRGRRGGBB = 0x3000,   /* 2x6 CFA pattern: GBBRRG; RRGGBB */
+    IM_CFA_PATTERN_UNKNOWN = 0xFFFFFFFF,    /* unknown pattern */
+} IM_CFA_PATTERN;
+
+typedef enum {
+    IM_CFA_FILTER_MEDIAN = 0x1 << 0,
+    IM_CFA_FILTER_HIGH_PASS = 0x1 << 1,
+} IM_CFA_FILTER_FLAG;
+
+typedef enum {
+    IM_CFA_A2_MODULATE_LPS = 0x1 << 0,
+    IM_CFA_A2_MODULATE_HPS = 0x1 << 1,
+    IM_CFA_A2_MODULATE_ERR = 0x1 << 2,
+} IM_CFA_A2_MODULATE_FLAG;
+
+typedef enum {
+    IM_CFA_DITHER_FLAG_ENABLE = 0x1 << 0,
+    IM_CFA_DITHER_FLAG_CLEAR_LOW_4BITS = 0x1 << 1,
+} IM_CFA_DITHER_FLAG;
+
 /* Get RGA basic information index */
 typedef enum {
     RGA_VENDOR = 0,
@@ -465,6 +501,25 @@ typedef struct im_gauss {
     double *matrix;
 } im_gauss_t;
 
+typedef struct im_cfa {
+    uint32_t type;
+    uint32_t pattern;
+
+    uint32_t filter;
+    uint32_t dither;
+    uint32_t a2_modulate;
+
+    uint32_t saturation_gain; // [0, 128], default 64
+    uint32_t sharpen_gain; // [0, 128], default 64
+
+    uint32_t comps_level; // [0, 128], default 64
+
+    rga_buffer_handle_t src1_handle;
+    rga_buffer_handle_t dst1_handle;
+
+    uint8_t bcsh_en;
+} im_cfa_t;
+
 typedef struct im_opt {
     im_api_version_t version DEFAULT_INITIALIZER(RGA_CURRENT_API_HEADER_VERSION);
 
@@ -486,7 +541,9 @@ typedef struct im_opt {
 
     im_gauss_t gauss_config;
 
-    char reserve[92];
+    im_cfa_t cfa_config;
+
+    char reserve[48];
 } im_opt_t;
 
 typedef struct im_handle_param {
