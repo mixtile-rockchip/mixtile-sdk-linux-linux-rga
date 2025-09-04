@@ -1078,6 +1078,17 @@ IM_STATUS rga_check_format(const char *name, rga_buffer_t info, im_rect rect, in
         ret = rga_yuv_legality_check(name, info, rect);
         if (ret != IM_STATUS_SUCCESS)
             return ret;
+    } else if (format == RK_FORMAT_Y1) {
+        if (~format_usage & IM_RGA_SUPPORT_FORMAT_Y1) {
+            IM_LOGW("%s unsupported Y1 format, format = 0x%x(%s)\n%s",
+                    name, info.format, translate_format_str(info.format),
+                    querystring((strcmp("dst", name) == 0) ? RGA_OUTPUT_FORMAT : RGA_INPUT_FORMAT));
+            return IM_STATUS_NOT_SUPPORTED;
+        }
+
+        ret = rga_yuv_legality_check(name, info, rect);
+        if (ret != IM_STATUS_SUCCESS)
+            return ret;
     } else {
         IM_LOGW("%s unsupported this format, format = 0x%x(%s)\n%s",
                 name, info.format, translate_format_str(info.format),
