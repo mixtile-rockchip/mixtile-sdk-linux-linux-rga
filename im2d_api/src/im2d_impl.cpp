@@ -938,6 +938,27 @@ IM_STATUS rga_get_info(struct rga_hw_versions_t *version, rga_info_table_entry *
                     goto TRY_TO_COMPATIBLE;
             }
         } else if (version->version[i].major == 5 &&
+                   version->version[i].minor == 3) {
+            switch (version->version[i].revision) {
+                case 0x48733 :
+                    // RK3572
+                    rga_version = IM_RGA_HW_VERSION_RGA_2_PRO_INDEX;
+                    memcpy(&merge_table, &hw_info_table[rga_version], sizeof(merge_table));
+
+                    merge_table.input_format |= IM_RGA_SUPPORT_FORMAT_RGBA_16BIT;
+                    merge_table.output_format |= IM_RGA_SUPPORT_FORMAT_YUV_420_SEMI_PLANNER_10_BIT |
+                                                 IM_RGA_SUPPORT_FORMAT_YUV_422_SEMI_PLANNER_10_BIT |
+                                                 IM_RGA_SUPPORT_FORMAT_RGBA_1010102 |
+                                                 IM_RGA_SUPPORT_FORMAT_YUV_444_PACED_10_BIT |
+                                                 IM_RGA_SUPPORT_FORMAT_Y1;
+                    merge_table.feature |= IM_RGA_SUPPORT_FEATURE_SECURE | IM_RGA_SUPPORT_FEATURE_CFA;
+                    merge_table.feature &= ~(IM_RGA_SUPPORT_FEATURE_QUANTIZE | IM_RGA_SUPPORT_FEATURE_ROP);
+                    break;
+                default :
+                    goto TRY_TO_COMPATIBLE;
+            }
+
+        } else if (version->version[i].major == 5 &&
                    version->version[i].minor == 2) {
             switch (version->version[i].revision) {
                 case 0x48482 :
