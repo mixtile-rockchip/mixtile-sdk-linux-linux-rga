@@ -28,6 +28,7 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include <inttypes.h>
 
 #include "im2d.h"
 #include "im2d_job.h"
@@ -1295,7 +1296,7 @@ IM_STATUS rga_check_feature(rga_buffer_t src, rga_buffer_t pat, rga_buffer_t dst
 }
 
 IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_buffer_t pat,
-                    const im_rect src_rect, const im_rect dst_rect, const im_rect pat_rect, int mode_usage) {
+                    const im_rect src_rect, const im_rect dst_rect, const im_rect pat_rect, uint64_t mode_usage) {
     bool pat_enable = 0;
     IM_STATUS ret = IM_STATUS_NOERROR;
     rga_session_t *session;
@@ -1378,7 +1379,7 @@ IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_bu
 
 IM_STATUS rga_check_external(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                              im_rect src_rect, im_rect dst_rect, im_rect pat_rect,
-                             int mode_usage) {
+                             uint64_t mode_usage) {
     int ret;
     int format;
 
@@ -1806,7 +1807,7 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
 IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                           im_rect srect, im_rect drect, im_rect prect,
                           int acquire_fence_fd, int *release_fence_fd,
-                          im_opt_t *opt_ptr, int usage) {
+                          im_opt_t *opt_ptr, uint64_t usage) {
     int ret;
     int format;
     rga_info_t srcinfo;
@@ -1938,7 +1939,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
         }
 
         if(srcinfo.rotation ==0)
-            IM_LOGE("rga_im2d: Could not find rotate/flip usage : 0x%x \n", usage);
+            IM_LOGE("rga_im2d: Could not find rotate/flip usage : 0x%" PRIu64 " \n", usage);
     }
 
     /* set 5551 Alpha bit */
@@ -1992,7 +1993,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
             srcinfo.blend |= (1 << 12);
 
         if(srcinfo.blend == 0)
-            IM_LOGE("rga_im2d: Could not find blend usage : 0x%x \n", usage);
+            IM_LOGE("rga_im2d: Could not find blend usage : 0x%" PRIu64 " \n", usage);
 
         /* set global alpha */
         srcinfo.blend |= (src.global_alpha & 0xff) << 16;
@@ -2382,7 +2383,7 @@ release_resource:
 IM_STATUS rga_single_task_submit(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                                  im_rect srect, im_rect drect, im_rect prect,
                                  int acquire_fence_fd, int *release_fence_fd,
-                                 im_opt_t *opt_ptr, int usage) {
+                                 im_opt_t *opt_ptr, uint64_t usage) {
     return rga_task_submit(0, src, dst, pat, srect, drect, prect, acquire_fence_fd, release_fence_fd, opt_ptr, usage);
 }
 

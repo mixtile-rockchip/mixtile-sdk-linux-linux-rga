@@ -90,7 +90,7 @@ IM_STATUS rga_check_header(struct rga_version_t header_version);
 IM_STATUS rga_check_driver(struct rga_version_t driver_version);
 IM_STATUS rga_check_external(const rga_buffer_t src, const rga_buffer_t dst, const rga_buffer_t pat,
                              const im_rect src_rect, const im_rect dst_rect, const im_rect pat_rect,
-                             int mode_usage);
+                             uint64_t mode_usage);
 
 IM_API IM_STATUS rga_import_buffers(struct rga_buffer_pool *buffer_pool);
 IM_API IM_STATUS rga_release_buffers(struct rga_buffer_pool *buffer_pool);
@@ -103,12 +103,12 @@ IM_STATUS rga_get_opt(im_opt_t *opt, void *ptr);
 IM_STATUS rga_single_task_submit(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                                  im_rect srect, im_rect drect, im_rect prect,
                                  int acquire_fence_fd, int *release_fence_fd,
-                                 im_opt_t *opt_ptr, int usage);
+                                 im_opt_t *opt_ptr, uint64_t usage);
 IM_STATUS rga_task_submit(im_job_handle_t job_handle,
                           rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                           im_rect srect, im_rect drect, im_rect prect,
                           int acquire_fence_fd, int *release_fence_fd,
-                          im_opt_t *opt_ptr, int usage);
+                          im_opt_t *opt_ptr, uint64_t usage);
 
 im_job_handle_t rga_job_create(uint32_t flags);
 IM_STATUS rga_job_cancel(im_job_handle_t job_handle);
