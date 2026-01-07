@@ -1611,7 +1611,7 @@ static IM_STATUS rga_generate_gauss_coe(im_gauss_t *gauss, struct rga_gauss_conf
     if (gauss->sigma_y <= 0)
         gauss->sigma_y = gauss->sigma_x;
 
-    /* generate guassian kernel */
+    /* generate gaussian kernel */
     if (gauss->matrix == NULL) {
         kernel = (double *)malloc(gauss->ksize.width * gauss->ksize.height * sizeof(double));
 
