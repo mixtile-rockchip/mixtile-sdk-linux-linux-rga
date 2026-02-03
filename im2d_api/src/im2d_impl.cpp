@@ -1630,7 +1630,7 @@ IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_bu
             return ret;
     }
 
-    if (~~mode_usage & IM_UPDATE_LUT) {
+    if (~mode_usage & IM_UPDATE_LUT) {
         ret = rga_check_info("dst", dst, dst_rect, rga_info->output_resolution);
         if (ret != IM_STATUS_NOERROR)
             return ret;
