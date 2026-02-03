@@ -1332,7 +1332,7 @@ IM_API IM_STATUS imgaussianBlur(rga_buffer_t src, rga_buffer_t dst,
         return IM_STATUS_INVALID_PARAM;
     }
 
-    usage |= IM_GAUSS;
+    usage |= CONVERT_32BIT_TO_64BIT(IM_GAUSS);
 
     imsetOptGaussianBlur(&opt, gauss_width, gauss_height, sigma_x, sigma_y);
 
@@ -1518,7 +1518,7 @@ IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t src1, rg
 
 IM_API IM_STATUS improcess(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                         im_rect srect, im_rect drect, im_rect prect, int usage) {
-    return rga_single_task_submit(src, dst, pat, srect, drect, prect, -1, NULL, NULL, usage);
+    return rga_single_task_submit(src, dst, pat, srect, drect, prect, -1, NULL, NULL, CONVERT_32BIT_TO_64BIT(usage));
 }
 
 IM_C_API IM_STATUS improcessOpt(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
@@ -1527,7 +1527,7 @@ IM_C_API IM_STATUS improcessOpt(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t
                                 im_opt_t *opt_ptr, int usage) {
     return rga_single_task_submit(src, dst, pat, srect, drect, prect,
                                   acquire_fence_fd, release_fence_fd,
-                                  opt_ptr, usage);
+                                  opt_ptr, CONVERT_32BIT_TO_64BIT(usage));
 }
 
 #ifdef __cplusplus
@@ -1536,7 +1536,7 @@ IM_API IM_STATUS improcess(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                            int acquire_fence_fd, int *release_fence_fd, im_opt_t *opt_ptr, int usage) {
     return rga_single_task_submit(src, dst, pat, srect, drect, prect,
                                   acquire_fence_fd, release_fence_fd,
-                                  opt_ptr, (uint64_t)usage);
+                                  opt_ptr, CONVERT_32BIT_TO_64BIT(usage));
 }
 /* End single task api */
 
@@ -2084,7 +2084,7 @@ IM_API IM_STATUS improcessTask(im_job_handle_t job_handle,
                                rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                                im_rect srect, im_rect drect, im_rect prect,
                                im_opt_t *opt_ptr, int usage) {
-    return rga_task_submit(job_handle, src, dst, pat, srect, drect, prect, -1, NULL, opt_ptr, usage);
+    return rga_task_submit(job_handle, src, dst, pat, srect, drect, prect, -1, NULL, opt_ptr, CONVERT_32BIT_TO_64BIT(usage));
 }
 /* End task api */
 #endif /* #ifdef __cplusplus */
@@ -2104,15 +2104,16 @@ IM_STATUS improcess_ctx(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                         im_opt_t *opt_ptr, int usage, im_ctx_id_t ctx_id) {
     int ret;
     int sync_mode;
+    uint64_t usage_64 = CONVERT_32BIT_TO_64BIT(usage);
 
     UNUSED(acquire_fence_fd);
     UNUSED(release_fence_fd);
 
-    ret = rga_task_submit((im_job_handle_t)ctx_id, src, dst, pat, srect, drect, prect, -1, NULL, opt_ptr, usage);
+    ret = rga_task_submit((im_job_handle_t)ctx_id, src, dst, pat, srect, drect, prect, -1, NULL, opt_ptr, usage_64);
     if (ret != IM_STATUS_SUCCESS)
         return (IM_STATUS)ret;
 
-    if (usage & IM_ASYNC)
+    if (usage_64 & IM_ASYNC)
         sync_mode = IM_ASYNC;
     else
         sync_mode = IM_SYNC;
@@ -2160,7 +2161,7 @@ IM_API rga_buffer_t wrapbuffer_fd_t(int fd,
 
 IM_API IM_STATUS imcheck_t(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                            im_rect src_rect, im_rect dst_rect, im_rect pat_rect, int mode_usage) {
-    return rga_check_external(src, dst, pat, src_rect, dst_rect, pat_rect, (int)mode_usage);
+    return rga_check_external(src, dst, pat, src_rect, dst_rect, pat_rect, CONVERT_32BIT_TO_64BIT(mode_usage));
 }
 
 IM_API IM_STATUS imresize_t(const rga_buffer_t src, rga_buffer_t dst, double fx, double fy, int interpolation, int sync) {

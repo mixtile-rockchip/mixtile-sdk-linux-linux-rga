@@ -29,6 +29,8 @@
 #define ALIGN(val, align) (((val) + ((align) - 1)) & ~((align) - 1))
 #define DOWN_ALIGN(val, align) ((val) & ~((align) - 1))
 #define UNUSED(...) (void)(__VA_ARGS__)
+#define CONVERT_32BIT_TO_64BIT(usage) ((uint64_t)((usage) & 0xFFFFFFFF))
+
 /*
  * version bit:
  *     0~7b   build

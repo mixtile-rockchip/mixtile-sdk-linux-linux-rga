@@ -1567,7 +1567,7 @@ IM_STATUS rga_check_feature(rga_buffer_t src, rga_buffer_t pat, rga_buffer_t dst
         return IM_STATUS_NOT_SUPPORTED;
     }
 
-    if ((mode_usage & IM_GAUSS) && (~feature_usage & IM_RGA_SUPPORT_FEATURE_GAUSS)) {
+    if ((mode_usage & CONVERT_32BIT_TO_64BIT(IM_GAUSS)) && (~feature_usage & IM_RGA_SUPPORT_FEATURE_GAUSS)) {
         IM_LOGW("The platform does not support gauss featrue.\n%s",
                 querystring(RGA_FEATURE));
         return IM_STATUS_NOT_SUPPORTED;
@@ -2687,7 +2687,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
     }
 
     /* set gauss */
-    if (usage & IM_GAUSS) {
+    if (usage & CONVERT_32BIT_TO_64BIT(IM_GAUSS)) {
         if (usage & IM_HAL_TRANSFORM_MASK) {
             IM_LOGW("Gaussian blur does not support rotation/mirror\n");
             return IM_STATUS_NOT_SUPPORTED;
@@ -2827,7 +2827,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
     ret = IM_STATUS_SUCCESS;
 
 release_resource:
-    if (usage & IM_GAUSS && req.gauss_config.coe_ptr != 0)
+    if (usage & CONVERT_32BIT_TO_64BIT(IM_GAUSS) && req.gauss_config.coe_ptr != 0)
         free(u64_to_ptr(req.gauss_config.coe_ptr));
 
     return (IM_STATUS)ret;

@@ -332,7 +332,7 @@ void rga_dump_opt(int log_level, const im_opt_t *opt, const int usage) {
                opt->intr_config.write_start, opt->intr_config.write_step);
     }
 
-    if (usage & IM_GAUSS) {
+    if (usage & CONVERT_32BIT_TO_64BIT(IM_GAUSS)) {
         IM_LOG(log_level, "\tGaussian Blur:\n"
                           "\t\tksize[%dx%d], sigma[x,y] = [%lf, %lf]\n",
                opt->gauss_config.ksize.width, opt->gauss_config.ksize.height,
