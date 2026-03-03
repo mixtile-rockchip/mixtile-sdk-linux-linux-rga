@@ -385,6 +385,27 @@ int rga_special_test(private_data_t *data, int time,
                     goto CHECK_ERROR;
             }
         }
+
+        /* case: in1, must enable blend */
+        if (data->special_case->input1) {
+            case_index++;
+
+            ret = imcomposite(tmp, src, tmp, IM_ALPHA_BLEND_DST, 1, NULL);
+            if (ret != IM_STATUS_SUCCESS) {
+                printf("ID[%d]: %s input1 %d time running failed! %s\n", data->id, data->name, time, imStrError(ret));
+                return slt_rga_error;
+            }
+
+            rga_sync_cache(&dst_img, INVALID_CACHE);
+
+            result_crc = crc32(0xffffffff, (unsigned char *)dst_buf, dst_buf_size);
+            if(g_golden_generate_crc) {
+                save_crcdata(result_crc, data->id, case_index);
+            } else {
+                if (!crc_check(data->id, case_index, result_crc, crc_golden_table))
+                    goto CHECK_ERROR;
+            }
+        }
     }
 
     return 0;
