@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 #include <math.h>
 #include <inttypes.h>
@@ -2972,8 +2973,14 @@ IM_STATUS rga_job_submit(im_job_handle_t job_handle, int sync_mode, int acquire_
         ret = IM_STATUS_SUCCESS;
     }
 
-    if ((sync_mode == IM_ASYNC) && release_fence_fd)
-        *release_fence_fd = submit_request.release_fence_fd;
+    if (sync_mode == IM_ASYNC) {
+        if (release_fence_fd)
+            *release_fence_fd = submit_request.release_fence_fd;
+
+        if (session->driver_feature & RGA_DRIVER_FEATURE_USER_CLOSE_FENCE &&
+            acquire_fence_fd >= 0)
+            close(acquire_fence_fd);
+    }
 
 free_job:
     free(job);
