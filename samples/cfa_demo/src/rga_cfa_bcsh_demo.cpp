@@ -47,6 +47,7 @@ int main() {
     int dst_width, dst_height, dst_format;
     int lut_width, lut_height, lut_format;
     char *src_buf, *dst_buf, *lut_buf;
+    char bcsh_table[256];
     int src_buf_size, dst_buf_size, lut_buf_size;
 
     rga_buffer_t src_img, dst_img, lut_img;
@@ -60,7 +61,7 @@ int main() {
 
     src_width = 1280;
     src_height = 720;
-    src_format = RK_FORMAT_RGBA_8888;
+    src_format = RK_FORMAT_YCbCr_400;
 
     dst_width = 1280;
     dst_height = 720;
@@ -81,15 +82,30 @@ int main() {
 
     /* fill image data */
     if (0 != read_image_from_file(src_buf, LOCAL_FILE_PATH, src_width, src_height, src_format, 0)) {
-        printf("src image read err\n");
-        draw_rgba(src_buf, src_width, src_height);
+        printf("src image read err, a color scale image from 0~255 will be drawn using the CPU.\n");
+        for (int i = 0; i < 256; i++) {
+            memset(src_buf + i * src_width * src_height / 256, i, src_width * src_height / 256);
+        }
     }
-    memset(dst_buf, 0x80, dst_buf_size);
+    memset(dst_buf, 0x00, dst_buf_size);
 
-    //TODO: generate BCSH LUT
-    memset(lut_buf, 0x11, lut_buf_size/3);
-    memset(lut_buf + lut_buf_size/3, 0x22, lut_buf_size/3);
-    memset(lut_buf + lut_buf_size/3*2, 0x33, lut_buf_size/3);
+    /* generate BCSH LUT table */
+    for (int i = 0; i < 256; i++) {
+        bcsh_table[i] = i;
+    }
+
+    /* generate RKCFA LUT table */
+    for (int i = 0; i < 256 / 4; i++) {
+        lut_buf[i * 8 + 0] = bcsh_table[i * 4 + 0];
+        lut_buf[i * 8 + 1] = bcsh_table[i * 4 + 1];
+        lut_buf[i * 8 + 2] = bcsh_table[i * 4 + 2];
+        lut_buf[i * 8 + 3] = bcsh_table[i * 4 + 3];
+
+        lut_buf[i * 8 + 4] = bcsh_table[i * 4 + 0];
+        lut_buf[i * 8 + 5] = bcsh_table[i * 4 + 1];
+        lut_buf[i * 8 + 6] = bcsh_table[i * 4 + 2];
+        lut_buf[i * 8 + 7] = bcsh_table[i * 4 + 3];
+    }
 
     src_handle = importbuffer_virtualaddr(src_buf, src_buf_size);
     dst_handle = importbuffer_virtualaddr(dst_buf, dst_buf_size);
@@ -103,36 +119,20 @@ int main() {
     dst_img = wrapbuffer_handle(dst_handle, dst_width, dst_height, dst_format);
     lut_img = wrapbuffer_handle(lut_handle, lut_width, lut_height, lut_format);
 
-    /* update BCSH LUT */
-    ret = imupdateLut(lut_img);
-    if (ret == IM_STATUS_SUCCESS) {
-        printf("%s update BCSH LUT success!\n", LOG_TAG);
-    } else {
-        printf("%s update BCSH LUT failed, %s\n", LOG_TAG, imStrError((IM_STATUS)ret));
-        goto release_buffer;
-    }
-
     /* config cfa */
     cfa.type = IM_CFA_TYPE_DEFAULT;
-    cfa.pattern = IM_CFA_PATTERN_3x3_RGBGBRBRG;
-
-    cfa.saturation_gain = 64; //[0, 128], default 64
-    cfa.sharpen_gain = 32; //[0, 128], default 32
-
-    cfa.filter = 0;
-    cfa.filter |= IM_CFA_FILTER_MEDIAN; //remove falsecolor effect
-    if (cfa.sharpen_gain < 64)
-        cfa.filter |= IM_CFA_FILTER_HIGH_PASS;
+    cfa.pattern = IM_CFA_PATTERN_GRAY;
 
     cfa.dither = 0;
-    cfa.dither |= IM_CFA_DITHER_FLAG_ENABLE;
+    cfa.dither |= IM_CFA_DITHER_FLAG_CLEAR_LOW_4BITS;
 
     cfa.bcsh_en = true;
 
     /*
-     * src image and dst image for ROP calculation
+     * Convert src to Y8 and enable BCSH LUT.
         src_img  => dst_img
-                 => pattern_img
+                 |
+        BCSH LUT =
         --------------    --------------
         |            |    |            |
         |  src_img   | => |     Y8     |
@@ -151,7 +151,7 @@ int main() {
         return -1;
     }
 
-    ret = imcfa(src_img, dst_img, {}, {}, &cfa);
+    ret = imcfa(src_img, dst_img, lut_img, {}, {}, &cfa);
     if (ret == IM_STATUS_SUCCESS) {
         printf("%s running success!\n", LOG_TAG);
     } else {
