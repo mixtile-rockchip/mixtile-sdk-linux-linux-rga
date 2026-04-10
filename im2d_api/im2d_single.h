@@ -467,6 +467,8 @@ IM_API IM_STATUS imupdateLut(rga_buffer_t lut, int sync = 1, int *release_fence_
  *      The input source image.
  * @param dst
  *      The output destination image(Y8/Y4/Y1).
+ * @param BCSH_table
+ *      The BCSH table image.
  * @param src1
  *      The input for previous frame reference, A2 mode only.
  * @param dst1
@@ -475,10 +477,17 @@ IM_API IM_STATUS imupdateLut(rga_buffer_t lut, int sync = 1, int *release_fence_
  *      The image processing options configuration.
  * @param sync
  *      When 'sync == 1', wait for the operation to complete and return, otherwise return directly.
+ * @param acquir_fence_fd
+ *      When 'sync == 0', the fence_fd used to identify the current job producer state.
+ * @param release_fence_fd
+ *      When 'sync == 0', the fence_fd used to identify the current job state.
  *
  * @returns success or else negative error code.
  */
 IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t src1, rga_buffer_t dst1, im_cfa_t *cfa_config, int sync = 1, int *release_fence_fd = NULL);
+IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t BCSH_table,
+                       rga_buffer_t src1, rga_buffer_t dst1, im_cfa_t *cfa_config,
+                       int sync = 1, int acquire_fence_fd = -1, int *release_fence_fd = NULL);
 
 /**
  * process for single task mode
@@ -550,8 +559,10 @@ IM_C_API IM_STATUS immakeBorderAsync(rga_buffer_t src, rga_buffer_t dst,
 IM_C_API IM_STATUS immosaic(const rga_buffer_t image, im_rect rect, int mosaic_mode, int sync);
 IM_C_API IM_STATUS imosd(const rga_buffer_t osd,const rga_buffer_t dst,
                          const im_rect osd_rect, im_osd_t *osd_config, int sync);
+
 IM_C_API IM_STATUS imupdateLut(rga_buffer_t lut, int sync);
 IM_C_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t src1, rga_buffer_t dst1, im_cfa_t *cfa_config, int sync);
+
 #endif /* #ifdef __cplusplus */
 
 IM_C_API IM_STATUS improcess(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,

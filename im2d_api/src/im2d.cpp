@@ -1516,6 +1516,48 @@ IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t src1, rg
     return ret;
 }
 
+IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t BCSH_table,
+                       rga_buffer_t pre_comps, rga_buffer_t next_comps,
+                       im_cfa_t *cfa_config,
+                       int sync, int acquire_fence_fd, int *release_fence_fd) {
+    uint64_t usage = 0;
+    IM_STATUS ret = IM_STATUS_NOERROR;
+
+    im_job_handle_t job_handle;
+    rga_buffer_t img;
+    im_opt_t opt;
+
+    im_rect rect;
+
+    memset(&img, 0x0, sizeof(img));
+    memset(&rect, 0x0, sizeof(rect));
+    memset(&opt, 0x0, sizeof(opt));
+
+    job_handle = imbeginJob(IM_JOB_FLAGS_EXEC_SEQUENTIAL);
+    if (job_handle <= 0)
+        return IM_STATUS_FAILED;
+
+    if (rga_is_buffer_valid(BCSH_table)) {
+        ret = rga_task_submit(job_handle, BCSH_table, img, img, rect, rect, rect, -1, NULL, NULL, IM_UPDATE_LUT);
+        if (ret != IM_STATUS_SUCCESS) {
+            imcancelJob(job_handle);
+            return ret;
+        }
+    }
+
+    memcpy(&opt.cfa_config, cfa_config, sizeof(im_cfa_t));
+    opt.cfa_config.src1_handle = pre_comps.handle;
+    opt.cfa_config.dst1_handle = next_comps.handle;
+
+    ret = rga_task_submit(job_handle, src, dst, img, rect, rect, rect, -1, NULL, &opt, IM_CFA);
+    if (ret != IM_STATUS_SUCCESS) {
+        imcancelJob(job_handle);
+        return ret;
+    }
+
+    return imendJob(job_handle, sync == 0 ? IM_ASYNC : IM_SYNC, -1, release_fence_fd);
+}
+
 IM_API IM_STATUS improcess(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                         im_rect srect, im_rect drect, im_rect prect, int usage) {
     return rga_single_task_submit(src, dst, pat, srect, drect, prect, -1, NULL, NULL, CONVERT_32BIT_TO_64BIT(usage));
