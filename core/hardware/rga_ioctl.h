@@ -74,6 +74,9 @@ extern "C"
 #define RGA_SCHED_PRIORITY_DEFAULT 0
 #define RGA_SCHED_PRIORITY_MAX 6
 
+/* request flags */
+#define RGA_REQUEST_FLAGS_EXEC_SEQUENTIAL   ((uint32_t)(1 << 0))
+
 enum rga_memory_type {
     RGA_DMA_BUFFER = 0,
     RGA_VIRTUAL_ADDRESS,
