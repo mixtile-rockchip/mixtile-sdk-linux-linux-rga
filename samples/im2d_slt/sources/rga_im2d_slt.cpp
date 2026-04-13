@@ -390,7 +390,7 @@ int rga_special_test(private_data_t *data, int time,
         if (data->special_case->input1) {
             case_index++;
 
-            ret = imcomposite(tmp, src, tmp, IM_ALPHA_BLEND_DST, 1, NULL);
+            ret = imcomposite(tmp, src, tmp, IM_ALPHA_BLEND_DST, 1);
             if (ret != IM_STATUS_SUCCESS) {
                 printf("ID[%d]: %s input1 %d time running failed! %s\n", data->id, data->name, time, imStrError(ret));
                 return slt_rga_error;
