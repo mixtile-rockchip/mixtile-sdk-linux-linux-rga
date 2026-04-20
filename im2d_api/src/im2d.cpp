@@ -1516,6 +1516,7 @@ IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t src1, rg
     return ret;
 }
 
+#ifdef __cplusplus
 IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t BCSH_table,
                        rga_buffer_t pre_comps, rga_buffer_t next_comps,
                        im_cfa_t *cfa_config,
@@ -1557,6 +1558,7 @@ IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t BCSH_tab
 
     return imendJob(job_handle, sync == 0 ? IM_ASYNC : IM_SYNC, -1, release_fence_fd);
 }
+#endif /* #ifdef __cplusplus */
 
 IM_API IM_STATUS improcess(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
                         im_rect srect, im_rect drect, im_rect prect, int usage) {
