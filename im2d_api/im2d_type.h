@@ -45,8 +45,6 @@ typedef uint32_t im_job_handle_t;
 typedef uint32_t im_ctx_id_t;
 typedef uint32_t rga_buffer_handle_t;
 
-#define IM_JOB_FLAGS_EXEC_SEQUENTIAL   ((uint32_t)(1 << 0))
-
 typedef enum {
     /* Rotation */
     IM_HAL_TRANSFORM_ROT_90     = 1 << 0,
@@ -258,6 +256,8 @@ typedef enum {
     IM_CONTEXT_DST_FIX_ENABLE   = 0x1 << 4,
     IM_CONTEXT_DST_CACHE_INFO   = 0x1 << 5,
 } IM_CONTEXT_FLAGS;
+
+#define IM_JOB_FLAGS_EXEC_SEQUENTIAL   ((uint32_t)(1 << 6))
 
 /* CFA */
 typedef enum {
