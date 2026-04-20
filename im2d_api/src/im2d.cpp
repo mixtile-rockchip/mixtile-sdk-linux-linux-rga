@@ -1468,30 +1468,6 @@ IM_STATUS imrectangleArray(rga_buffer_t dst, im_rect *rect_array, int array_size
     return IM_STATUS_SUCCESS;
 }
 
-IM_API IM_STATUS imupdateLut(rga_buffer_t lut, int sync, int *release_fence_fd) {
-    uint64_t usage = 0;
-    IM_STATUS ret = IM_STATUS_NOERROR;
-
-    rga_buffer_t img;
-    im_rect rect;
-    im_opt_t opt;
-
-    memset(&img, 0x0, sizeof(img));
-    memset(&rect, 0x0, sizeof(rect));
-    memset(&opt, 0x0, sizeof(opt));
-
-    usage |= IM_UPDATE_LUT;
-
-    if (sync == 0)
-        usage |= IM_ASYNC;
-    else if (sync == 1)
-        usage |= IM_SYNC;
-
-    ret = rga_single_task_submit(lut, img, img, rect, rect, rect, -1, release_fence_fd, &opt, usage);
-
-    return ret;
-}
-
 IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t src1, rga_buffer_t dst1, im_cfa_t *cfa_config, int sync, int *release_fence_fd) {
     uint64_t usage = 0;
     IM_STATUS ret = IM_STATUS_NOERROR;
@@ -2274,13 +2250,5 @@ IM_API IM_STATUS immosaic(const rga_buffer_t image, im_rect rect, int mosaic_mod
 IM_API IM_STATUS imosd(const rga_buffer_t osd,const rga_buffer_t dst, const im_rect osd_rect,
                        im_osd_t *osd_info, int sync) {
     return imosd(osd, dst, osd_rect, osd_info, sync, NULL);
-}
-
-IM_API IM_STATUS imupdateLut(rga_buffer_t lut, int sync) {
-    return imupdateLut(lut, sync, NULL);
-}
-
-IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t src1, rga_buffer_t dst, rga_buffer_t dst1, im_cfa_t *cfa_config, int sync) {
-    return imcfa(src, src1, dst, dst1, cfa_config, sync, NULL);
 }
 #endif

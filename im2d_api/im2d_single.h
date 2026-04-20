@@ -449,18 +449,6 @@ IM_API IM_STATUS imgaussianBlur(rga_buffer_t src, rga_buffer_t dst,
 IM_API IM_STATUS impalette(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t lut, int sync = 1, int *release_fence_fd = NULL);
 
 /**
- * update LUT table
- *
- * @param lut
- *      The LUT table.
- * @param sync
- *      When 'sync == 1', wait for the operation to complete and return, otherwise return directly.
- *
- * @returns success or else negative error code.
- */
-IM_API IM_STATUS imupdateLut(rga_buffer_t lut, int sync = 1, int *release_fence_fd = NULL);
-
-/**
  * CFA (Color Filter Array)
  *
  * @param src
@@ -559,10 +547,6 @@ IM_C_API IM_STATUS immakeBorderAsync(rga_buffer_t src, rga_buffer_t dst,
 IM_C_API IM_STATUS immosaic(const rga_buffer_t image, im_rect rect, int mosaic_mode, int sync);
 IM_C_API IM_STATUS imosd(const rga_buffer_t osd,const rga_buffer_t dst,
                          const im_rect osd_rect, im_osd_t *osd_config, int sync);
-
-IM_C_API IM_STATUS imupdateLut(rga_buffer_t lut, int sync);
-IM_C_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t src1, rga_buffer_t dst1, im_cfa_t *cfa_config, int sync);
-
 #endif /* #ifdef __cplusplus */
 
 IM_C_API IM_STATUS improcess(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pat,
