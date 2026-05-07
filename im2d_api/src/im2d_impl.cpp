@@ -659,12 +659,18 @@ static IM_STATUS rga_yuv_legality_check(const char *name, rga_buffer_t info, im_
     return IM_STATUS_SUCCESS;
 }
 
-bool rga_is_buffer_valid(rga_buffer_t buf) {
-    return (buf.phy_addr != NULL || buf.vir_addr != NULL || buf.fd > 0 || buf.handle > 0);
+bool rga_is_buffer_valid(const rga_buffer_t *buf) {
+    if (buf == NULL)
+        return false;
+
+    return (buf->phy_addr != NULL || buf->vir_addr != NULL || buf->fd > 0 || buf->handle > 0);
 }
 
-bool rga_is_rect_valid(im_rect rect) {
-    return (rect.x > 0 || rect.y > 0 || (rect.width > 0 && rect.height > 0));
+bool rga_is_rect_valid(const im_rect *rect) {
+    if (rect == NULL)
+        return false;
+
+    return (rect->x > 0 || rect->y > 0 || (rect->width > 0 && rect->height > 0));
 }
 
 void empty_structure(rga_buffer_t *src, rga_buffer_t *dst, rga_buffer_t *pat,
@@ -1461,7 +1467,7 @@ IM_STATUS rga_check_blend(rga_buffer_t src, rga_buffer_t pat, rga_buffer_t dst, 
     dst_isRGB = is_rga_format(dst_fmt);
 
     /* bg format check */
-    if (rga_is_buffer_valid(pat)) {
+    if (rga_is_buffer_valid(&pat)) {
         if (!pat_isRGB) {
             IM_LOGW("Blend mode background layer unsupport non-RGB format, pat format = %#x(%s)",
                 pat_fmt, translate_format_str(pat_fmt));
@@ -1591,7 +1597,7 @@ IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_bu
     rga_info = &session->hardware_info;
 
     if (mode_usage & IM_ALPHA_BLEND_MASK) {
-        if (rga_is_buffer_valid(pat))
+        if (rga_is_buffer_valid(&pat))
             pat_enable = 1;
     }
 
@@ -1689,7 +1695,7 @@ IM_STATUS rga_check_external(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pa
     }
     dst.format = format;
 
-    if (rga_is_buffer_valid(pat)) {
+    if (rga_is_buffer_valid(&pat)) {
         rga_apply_rect(&pat, &pat_rect);
         format = convert_to_rga_format(pat.format);
         if (format == RK_FORMAT_UNKNOWN) {
@@ -2318,7 +2324,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
     rga_set_rect(&dstinfo.rect, drect.x, drect.y, dst.width, dst.height, dst.wstride, dst.hstride, dst.format);
 
     if (((usage & IM_COLOR_PALETTE) || (usage & IM_ALPHA_BLEND_MASK)) &&
-        rga_is_buffer_valid(pat)) {
+        rga_is_buffer_valid(&pat)) {
 
         ret = rga_set_buffer_info("src1/pat", pat, &patinfo);
         if (ret <= 0)
@@ -2570,7 +2576,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
 
     /* special config for color space convert */
     if ((dst.color_space_mode & IM_YUV_TO_RGB_MASK) && (dst.color_space_mode & IM_RGB_TO_YUV_MASK)) {
-        if (rga_is_buffer_valid(pat) &&
+        if (rga_is_buffer_valid(&pat) &&
             is_yuv_format(src.format) &&
             is_rgb_format(pat.format) &&
             is_yuv_format(dst.format)) {
@@ -2590,7 +2596,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
             return IM_STATUS_ILLEGAL_PARAM;
         }
     } else if (dst.color_space_mode & (IM_YUV_TO_RGB_MASK)) {
-        if (rga_is_buffer_valid(pat) &&
+        if (rga_is_buffer_valid(&pat) &&
             is_yuv_format(src.format) &&
             is_rgb_format(pat.format) &&
             is_rgb_format(dst.format)) {
@@ -2602,12 +2608,12 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
             IM_LOGW("Not yuv to rgb does not need for color_sapce_mode, please fix, "
                     "src_fromat = 0x%x(%s), src1_format = 0x%x(%s), dst_format = 0x%x(%s)",
                     src.format, translate_format_str(src.format),
-                    pat.format, rga_is_buffer_valid(pat) ? translate_format_str(pat.format) : "none",
+                    pat.format, rga_is_buffer_valid(&pat) ? translate_format_str(pat.format) : "none",
                     dst.format, translate_format_str(dst.format));
             return IM_STATUS_ILLEGAL_PARAM;
         }
     } else if (dst.color_space_mode & (IM_RGB_TO_YUV_MASK)) {
-        if (rga_is_buffer_valid(pat) &&
+        if (rga_is_buffer_valid(&pat) &&
             is_rgb_format(src.format) &&
             is_rgb_format(pat.format) &&
             is_yuv_format(dst.format)) {
@@ -2625,7 +2631,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
             IM_LOGW("Not rgb to yuv does not need for color_sapce_mode, please fix, "
                     "src_fromat = 0x%x(%s), src1_format = 0x%x(%s), dst_format = 0x%x(%s)",
                     src.format, translate_format_str(src.format),
-                    pat.format, rga_is_buffer_valid(pat) ? translate_format_str(pat.format) : "none",
+                    pat.format, rga_is_buffer_valid(&pat) ? translate_format_str(pat.format) : "none",
                     dst.format, translate_format_str(dst.format));
             return IM_STATUS_ILLEGAL_PARAM;
         }
@@ -2639,12 +2645,12 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
         if (dst.color_space_mode == IM_COLOR_SPACE_DEFAULT)
             dst.color_space_mode = rga_get_default_csc_mode(dst.format);
 
-        if (rga_is_buffer_valid(pat)) {
+        if (rga_is_buffer_valid(&pat)) {
             if (!is_rgb_format(pat.format)) {
                 IM_LOGW("src1/pat channel only support RGBA/RGB format, please fix, "
                         "src_fromat = 0x%x(%s), src1_format = 0x%x(%s), dst_format = 0x%x(%s)",
                         src.format, translate_format_str(src.format),
-                        pat.format, rga_is_buffer_valid(pat) ? translate_format_str(pat.format) : "none",
+                        pat.format, rga_is_buffer_valid(&pat) ? translate_format_str(pat.format) : "none",
                         dst.format, translate_format_str(dst.format));
                 return IM_STATUS_ILLEGAL_PARAM;
             }
@@ -2709,7 +2715,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
 
     srcinfo.rd_mode = src.rd_mode;
     dstinfo.rd_mode = dst.rd_mode;
-    if (rga_is_buffer_valid(pat))
+    if (rga_is_buffer_valid(&pat))
         patinfo.rd_mode = pat.rd_mode;
 
     if (usage & IM_ASYNC) {
@@ -2741,7 +2747,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
         ret = generate_color_palette_req(&req, &srcinfo, &dstinfo, &patinfo);
     } else if (((usage & IM_ALPHA_BLEND_MASK) ||
                 (usage & IM_CFA)) &&
-               rga_is_buffer_valid(pat)) {
+               rga_is_buffer_valid(&pat)) {
         ret = generate_blit_req(&req, &srcinfo, &dstinfo, &patinfo);
     } else {
         ret = generate_blit_req(&req, &srcinfo, &dstinfo, NULL);

@@ -1514,7 +1514,7 @@ IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t BCSH_tab
     if (job_handle <= 0)
         return IM_STATUS_FAILED;
 
-    if (rga_is_buffer_valid(BCSH_table)) {
+    if (rga_is_buffer_valid(&BCSH_table)) {
         ret = rga_task_submit(job_handle, BCSH_table, img, img, rect, rect, rect, -1, NULL, NULL, IM_UPDATE_LUT);
         if (ret != IM_STATUS_SUCCESS) {
             imcancelJob(job_handle);

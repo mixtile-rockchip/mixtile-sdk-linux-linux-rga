@@ -262,7 +262,7 @@ void rga_dump_image(int log_level,
     IM_LOG(log_level, "----------+------------------+----------------------------+----------------------------+-------------------------+----------------------------------------------------------------+----------------------------+--------------");
     //                " src1/pat | afbc32x32(0xff)  | 10000, 10000, 10000, 10000 | 10000, 10000, 10000, 10000 | YCrCb_420SP 10bit(0xff) | 0xffffffff, 0xffffffff, 0xffffffffffffffff, 0xffffffffffffffff | yuv2rgb-bt.601-limit(0xff) | 0xff         "
     rga_dump_channel_info_tabular(log_level, "src", srect, src);
-    if (pat != NULL && rga_is_buffer_valid(*pat))
+    if (pat != NULL && rga_is_buffer_valid(pat))
         rga_dump_channel_info_tabular(log_level, "src1/pat", prect, pat);
     rga_dump_channel_info_tabular(log_level, "dst", drect, dst);
 
