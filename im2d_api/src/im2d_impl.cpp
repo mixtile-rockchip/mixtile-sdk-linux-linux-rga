@@ -52,6 +52,10 @@
 using namespace android;
 #endif
 
+#define RGA_TASK_BUFFER_SRC_EN      (0x1U << 0)
+#define RGA_TASK_BUFFER_SRC1_EN     (0x1U << 1)
+#define RGA_TASK_BUFFER_DST_EN      (0x1U << 2)
+
 #define MAX(n1, n2) ((n1) > (n2) ? (n1) : (n2))
 #define MIN(n1, n2) ((n1) < (n2) ? (n1) : (n2))
 #define GET_GCD(n1, n2) \
@@ -712,6 +716,78 @@ IM_STATUS static rga_set_buffer_info(const char *name, rga_buffer_t image, rga_i
                 name, (unsigned long)image.phy_addr, image.fd, (unsigned long)image.vir_addr, image.handle);
         return IM_STATUS_INVALID_PARAM;
     }
+
+    return IM_STATUS_SUCCESS;
+}
+
+static int rga_get_default_csc_mode(int format)
+{
+    if  (is_rgb_format(format)) {
+        return IM_RGB_FULL;
+    } else if (is_yuv_format(format)) {
+        return IM_YUV_BT601_LIMIT_RANGE;
+    }
+
+    return 0;
+}
+
+static IM_STATUS rga_image_prepare(const char *name, rga_buffer_t *img, im_rect *rect) {
+    int format;
+
+    rga_apply_rect(img, rect);
+    format = convert_to_rga_format(img->format);
+    if (format == RK_FORMAT_UNKNOWN) {
+        IM_LOGW("%s invaild format [0x%x]!\n", name, img->format);
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+    img->format = format;
+
+    if (img->color_space_mode == IM_COLOR_SPACE_DEFAULT)
+        img->color_space_mode = rga_get_default_csc_mode(img->format);
+
+    if (img->rd_mode == 0)
+        img->rd_mode = IM_RASTER_MODE;
+
+    return IM_STATUS_SUCCESS;
+}
+
+static IM_STATUS rga_task_prepare(uint32_t *out_buffer_mask,
+                                  rga_buffer_t *src, rga_buffer_t *dst, rga_buffer_t *pat,
+                                  im_rect *srect, im_rect *drect, im_rect *prect, uint64_t usage) {
+    IM_STATUS ret;
+    uint32_t buffer_mask;
+
+    if (usage & IM_COLOR_FILL) {
+        buffer_mask = RGA_TASK_BUFFER_DST_EN;
+    } else if (usage & IM_UPDATE_LUT) {
+        buffer_mask = RGA_TASK_BUFFER_SRC_EN;
+    } else if (rga_is_buffer_valid(pat) &&
+               ((usage & IM_COLOR_PALETTE) || (usage & IM_ALPHA_BLEND_MASK) || (usage & IM_CFA))) {
+        buffer_mask = RGA_TASK_BUFFER_SRC_EN | RGA_TASK_BUFFER_SRC1_EN | RGA_TASK_BUFFER_DST_EN;
+    } else {
+        buffer_mask = RGA_TASK_BUFFER_SRC_EN | RGA_TASK_BUFFER_DST_EN;
+    }
+
+    if (buffer_mask & RGA_TASK_BUFFER_SRC_EN) {
+        ret = rga_image_prepare("src", src, srect);
+        if (ret != IM_STATUS_SUCCESS)
+            return ret;
+    }
+
+    if (buffer_mask & RGA_TASK_BUFFER_SRC1_EN) {
+        ret = rga_image_prepare("pat", pat, prect);
+        if (ret != IM_STATUS_SUCCESS)
+            return ret;
+    }
+
+    if (buffer_mask & RGA_TASK_BUFFER_DST_EN) {
+        ret = rga_image_prepare("dst", dst, drect);
+        if (ret != IM_STATUS_SUCCESS)
+            return ret;
+    }
+
+    if (out_buffer_mask != NULL)
+        *out_buffer_mask = buffer_mask;
 
     return IM_STATUS_SUCCESS;
 }
@@ -1672,38 +1748,10 @@ IM_STATUS rga_check_external(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t pa
                              im_rect src_rect, im_rect dst_rect, im_rect pat_rect,
                              uint64_t mode_usage) {
     int ret;
-    int format;
 
-    if (mode_usage & IM_CROP) {
-        dst_rect.width = src_rect.width;
-        dst_rect.height = src_rect.height;
-    }
-
-    rga_apply_rect(&src, &src_rect);
-    format = convert_to_rga_format(src.format);
-    if (format == RK_FORMAT_UNKNOWN) {
-        IM_LOGW("Invaild src format [0x%x]!\n", src.format);
-        return IM_STATUS_NOT_SUPPORTED;
-    }
-    src.format = format;
-
-    rga_apply_rect(&dst, &dst_rect);
-    format = convert_to_rga_format(dst.format);
-    if (format == RK_FORMAT_UNKNOWN) {
-        IM_LOGW("Invaild dst format [0x%x]!\n", dst.format);
-        return IM_STATUS_NOT_SUPPORTED;
-    }
-    dst.format = format;
-
-    if (rga_is_buffer_valid(&pat)) {
-        rga_apply_rect(&pat, &pat_rect);
-        format = convert_to_rga_format(pat.format);
-        if (format == RK_FORMAT_UNKNOWN) {
-            IM_LOGW("Invaild pat format [0x%x]!\n", pat.format);
-            return IM_STATUS_NOT_SUPPORTED;
-        }
-        pat.format = format;
-    }
+    ret = rga_task_prepare(NULL, &src, &dst, &pat, &src_rect, &dst_rect, &pat_rect, mode_usage);
+    if (ret != IM_STATUS_SUCCESS)
+        return (IM_STATUS)ret;
 
     return rga_check(src, dst, pat, src_rect, dst_rect, pat_rect, mode_usage);
 }
@@ -1937,17 +1985,6 @@ static IM_STATUS rga_generate_gauss_coe(im_gauss_t *gauss, struct rga_gauss_conf
         free(kernel);
 
     return IM_STATUS_SUCCESS;
-}
-
-static int rga_get_default_csc_mode(int format)
-{
-    if  (is_rgb_format(format)) {
-        return IM_RGB_FULL;
-    } else if (is_yuv_format(format)) {
-        return IM_YUV_BT601_LIMIT_RANGE;
-    }
-
-    return 0;
 }
 
 static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
@@ -2260,7 +2297,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
                           int acquire_fence_fd, int *release_fence_fd,
                           im_opt_t *opt_ptr, uint64_t usage) {
     int ret;
-    int format;
+    uint32_t buffer_mask = 0;
     rga_info_t srcinfo;
     rga_info_t dstinfo;
     rga_info_t patinfo;
@@ -2291,59 +2328,35 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
     memset(&patinfo, 0, sizeof(rga_info_t));
     memset(&req, 0, sizeof(req));
 
-    if (usage & IM_COLOR_FILL) {
-        ret = rga_set_buffer_info("dst", dst, &dstinfo);
-    } else if (usage & IM_UPDATE_LUT) {
-        ret = rga_set_buffer_info("lut", src, &srcinfo);
-    } else {
-        ret = rga_set_buffer_info("src", src, &srcinfo);
-        ret = rga_set_buffer_info("dst", dst, &dstinfo);
-    }
-
-    if (ret <= 0)
+    ret = rga_task_prepare(&buffer_mask, &src, &dst, &pat, &srect, &drect, &prect, usage);
+    if (ret != IM_STATUS_SUCCESS)
         return (IM_STATUS)ret;
-
-    rga_apply_rect(&src, &srect);
-    format = convert_to_rga_format(src.format);
-    if (format == RK_FORMAT_UNKNOWN) {
-        IM_LOGW("Invaild src format [0x%x]!\n", src.format);
-        return IM_STATUS_NOT_SUPPORTED;
-    }
-    src.format = format;
-
-    rga_set_rect(&srcinfo.rect, srect.x, srect.y, src.width, src.height, src.wstride, src.hstride, src.format);
-
-    rga_apply_rect(&dst, &drect);
-    format = convert_to_rga_format(dst.format);
-    if (format == RK_FORMAT_UNKNOWN) {
-        IM_LOGW("Invaild dst format [0x%x]!\n", dst.format);
-        return IM_STATUS_NOT_SUPPORTED;
-    }
-    dst.format = format;
-
-    rga_set_rect(&dstinfo.rect, drect.x, drect.y, dst.width, dst.height, dst.wstride, dst.hstride, dst.format);
-
-    if (((usage & IM_COLOR_PALETTE) || (usage & IM_ALPHA_BLEND_MASK)) &&
-        rga_is_buffer_valid(&pat)) {
-
-        ret = rga_set_buffer_info("src1/pat", pat, &patinfo);
-        if (ret <= 0)
-            return (IM_STATUS)ret;
-
-        rga_apply_rect(&pat, &prect);
-        format = convert_to_rga_format(pat.format);
-        if (format == RK_FORMAT_UNKNOWN) {
-            IM_LOGW("Invaild pat format [0x%x]!\n", pat.format);
-            return IM_STATUS_NOT_SUPPORTED;
-        }
-        pat.format = format;
-
-        rga_set_rect(&patinfo.rect, prect.x, prect.y, pat.width, pat.height, pat.wstride, pat.hstride, pat.format);
-    }
 
     ret = rga_check(src, dst, pat, srect, drect, prect, usage);
     if(ret != IM_STATUS_NOERROR)
         return (IM_STATUS)ret;
+
+    /* setup buffer info */
+    if (buffer_mask & RGA_TASK_BUFFER_SRC_EN) {
+        ret = rga_set_buffer_info((usage & IM_UPDATE_LUT) ? "lut" : "src", src, &srcinfo);
+        if (ret <= 0)
+            return (IM_STATUS)ret;
+        rga_set_rect(&srcinfo.rect, srect.x, srect.y, src.width, src.height, src.wstride, src.hstride, src.format);
+    }
+
+    if (buffer_mask & RGA_TASK_BUFFER_DST_EN) {
+        ret = rga_set_buffer_info("dst", dst, &dstinfo);
+        if (ret <= 0)
+            return (IM_STATUS)ret;
+        rga_set_rect(&dstinfo.rect, drect.x, drect.y, dst.width, dst.height, dst.wstride, dst.hstride, dst.format);
+    }
+
+    if (buffer_mask & RGA_TASK_BUFFER_SRC1_EN) {
+        ret = rga_set_buffer_info("src1/pat", pat, &patinfo);
+        if (ret <= 0)
+            return (IM_STATUS)ret;
+        rga_set_rect(&patinfo.rect, prect.x, prect.y, pat.width, pat.height, pat.wstride, pat.hstride, pat.format);
+    }
 
     /* scaling interpolation */
     if (opt.interp & IM_INTERP_HORIZ_FLAG ||
@@ -2715,7 +2728,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
 
     srcinfo.rd_mode = src.rd_mode;
     dstinfo.rd_mode = dst.rd_mode;
-    if (rga_is_buffer_valid(&pat))
+    if (buffer_mask & RGA_TASK_BUFFER_SRC1_EN)
         patinfo.rd_mode = pat.rd_mode;
 
     if (usage & IM_ASYNC) {
@@ -2744,10 +2757,12 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
     } else if (usage & IM_UPDATE_LUT) {
         ret = generate_update_lut_req(&req, &srcinfo);
     } else if (usage & IM_COLOR_PALETTE) {
-        ret = generate_color_palette_req(&req, &srcinfo, &dstinfo, &patinfo);
-    } else if (((usage & IM_ALPHA_BLEND_MASK) ||
-                (usage & IM_CFA)) &&
-               rga_is_buffer_valid(&pat)) {
+        if (buffer_mask & RGA_TASK_BUFFER_SRC1_EN)
+            ret = generate_color_palette_req(&req, &srcinfo, &dstinfo, &patinfo);
+        else
+            ret = generate_color_palette_req(&req, &srcinfo, &dstinfo, NULL);
+    } else if ((buffer_mask & RGA_TASK_BUFFER_SRC1_EN) &&
+               ((usage & IM_ALPHA_BLEND_MASK) || (usage & IM_CFA))) {
         ret = generate_blit_req(&req, &srcinfo, &dstinfo, &patinfo);
     } else {
         ret = generate_blit_req(&req, &srcinfo, &dstinfo, NULL);
