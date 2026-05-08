@@ -1596,6 +1596,39 @@ IM_STATUS rga_check_align(const char *name, rga_buffer_t info, int byte_stride, 
     return IM_STATUS_NOERROR;
 }
 
+IM_STATUS rga_check_color_space(const char *name, int format, int color_space)
+{
+    switch (color_space & IM_FULL_CSC_MASK) {
+        case IM_RGB_FULL:
+        case IM_RGB_CLIP:
+            if (!is_rgb_format(format)) {
+                IM_LOGW("%s color space mode [%s(%#x)] does not match format [%s(%#x)]!",
+                        name,
+                        string_color_space(color_space), color_space,
+                        translate_format_str(format), format);
+                return IM_STATUS_NOT_SUPPORTED;
+            }
+            break;
+        case IM_YUV_BT601_LIMIT_RANGE:
+        case IM_YUV_BT601_FULL_RANGE:
+        case IM_YUV_BT709_LIMIT_RANGE:
+        case IM_YUV_BT709_FULL_RANGE:
+            if (!is_yuv_format(format)) {
+                IM_LOGW("%s color space mode [%s(%#x)] does not match format [%s(%#x)]!",
+                        name,
+                        string_color_space(color_space), color_space,
+                        translate_format_str(format), format);
+                return IM_STATUS_NOT_SUPPORTED;
+            }
+            break;
+        default:
+            IM_LOGW("%s unsupported color space mode [%#x]!", name, color_space);
+            return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    return IM_STATUS_NOERROR;
+}
+
 IM_STATUS rga_check_blend(rga_buffer_t src, rga_buffer_t pat, rga_buffer_t dst, int pat_enable, int mode_usage) {
     int src_fmt, pat_fmt, dst_fmt;
     bool src_isRGB, pat_isRGB, dst_isRGB;
@@ -1750,6 +1783,9 @@ IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_bu
         ret = rga_check_align("src", src, rga_info->byte_stride, true);
         if (ret != IM_STATUS_NOERROR)
             return ret;
+        ret = rga_check_color_space("src", src.format, src.color_space_mode);
+        if (ret != IM_STATUS_NOERROR)
+            return ret;
     }
     if (pat_enable) {
         /* RGA1 cannot support src1. */
@@ -1768,6 +1804,9 @@ IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_bu
         ret = rga_check_align("pat", pat, rga_info->byte_stride, true);
         if (ret != IM_STATUS_NOERROR)
             return ret;
+        ret = rga_check_color_space("pat", pat.format, pat.color_space_mode);
+        if (ret != IM_STATUS_NOERROR)
+            return ret;
     }
 
     if (~mode_usage & IM_UPDATE_LUT) {
@@ -1778,6 +1817,9 @@ IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_bu
         if (ret != IM_STATUS_NOERROR)
             return ret;
         ret = rga_check_align("dst", dst, rga_info->byte_stride, false);
+        if (ret != IM_STATUS_NOERROR)
+            return ret;
+        ret = rga_check_color_space("dst", dst.format, dst.color_space_mode);
         if (ret != IM_STATUS_NOERROR)
             return ret;
     }
