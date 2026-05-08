@@ -731,6 +731,56 @@ static int rga_get_default_csc_mode(int format)
     return 0;
 }
 
+static IM_STATUS rga_convert_legacy_src_csc_mode(uint32_t legacy_mode, rga_buffer_t *src) {
+    if (is_yuv_format(src->format)) {
+        switch (legacy_mode & IM_YUV_TO_RGB_MASK) {
+            case IM_YUV_TO_RGB_BT601_LIMIT:
+                src->color_space_mode = IM_YUV_BT601_LIMIT_RANGE;
+                break;
+            case IM_YUV_TO_RGB_BT601_FULL:
+                src->color_space_mode = IM_YUV_BT601_FULL_RANGE;
+                break;
+            case IM_YUV_TO_RGB_BT709_LIMIT:
+                src->color_space_mode = IM_YUV_BT709_LIMIT_RANGE;
+                break;
+            default:
+                src->color_space_mode = rga_get_default_csc_mode(src->format);
+                break;
+        }
+    } else if (legacy_mode & IM_YUV_TO_RGB_MASK) {
+        IM_LOGW("src [0x%x(%s)] not YUV does not need for color_sapce_mode YUV_TO_RGB.",
+                src->format, translate_format_str(src->format));
+        return IM_STATUS_ILLEGAL_PARAM;
+    }
+
+    return IM_STATUS_SUCCESS;
+}
+
+static IM_STATUS rga_convert_legacy_dst_csc_mode(uint32_t legacy_mode, rga_buffer_t *dst) {
+    if (is_yuv_format(dst->format)) {
+        switch (legacy_mode & IM_RGB_TO_YUV_MASK) {
+            case IM_RGB_TO_YUV_BT601_LIMIT:
+                dst->color_space_mode = IM_YUV_BT601_LIMIT_RANGE;
+                break;
+            case IM_RGB_TO_YUV_BT601_FULL:
+                dst->color_space_mode = IM_YUV_BT601_FULL_RANGE;
+                break;
+            case IM_RGB_TO_YUV_BT709_LIMIT:
+                dst->color_space_mode = IM_YUV_BT709_LIMIT_RANGE;
+                break;
+            default:
+                dst->color_space_mode = rga_get_default_csc_mode(dst->format);
+                break;
+        }
+    } else if (legacy_mode & IM_RGB_TO_YUV_MASK) {
+        IM_LOGW("dst [0x%x(%s)] not YUV does not need for color_sapce_mode RGB_TO_YUV.",
+                dst->format, translate_format_str(dst->format));
+        return IM_STATUS_ILLEGAL_PARAM;
+    }
+
+    return IM_STATUS_SUCCESS;
+}
+
 static IM_STATUS rga_image_prepare(const char *name, rga_buffer_t *img, im_rect *rect) {
     int format;
 
@@ -755,7 +805,12 @@ static IM_STATUS rga_task_prepare(uint32_t *out_buffer_mask,
                                   rga_buffer_t *src, rga_buffer_t *dst, rga_buffer_t *pat,
                                   im_rect *srect, im_rect *drect, im_rect *prect, uint64_t usage) {
     IM_STATUS ret;
+    int legacy_csc_mode;
     uint32_t buffer_mask;
+
+    legacy_csc_mode = dst->color_space_mode & IM_LEGACY_CSC_MASK;
+    if (legacy_csc_mode > 0)
+        dst->color_space_mode = IM_COLOR_SPACE_DEFAULT;
 
     if (usage & IM_COLOR_FILL) {
         buffer_mask = RGA_TASK_BUFFER_DST_EN;
@@ -772,6 +827,12 @@ static IM_STATUS rga_task_prepare(uint32_t *out_buffer_mask,
         ret = rga_image_prepare("src", src, srect);
         if (ret != IM_STATUS_SUCCESS)
             return ret;
+
+        if (legacy_csc_mode) {
+            ret = rga_convert_legacy_src_csc_mode(legacy_csc_mode, src);
+            if (ret != IM_STATUS_SUCCESS)
+                return ret;
+        }
     }
 
     if (buffer_mask & RGA_TASK_BUFFER_SRC1_EN) {
@@ -784,6 +845,11 @@ static IM_STATUS rga_task_prepare(uint32_t *out_buffer_mask,
         ret = rga_image_prepare("dst", dst, drect);
         if (ret != IM_STATUS_SUCCESS)
             return ret;
+        if (legacy_csc_mode) {
+            ret = rga_convert_legacy_dst_csc_mode(legacy_csc_mode, dst);
+            if (ret != IM_STATUS_SUCCESS)
+                return ret;
+        }
     }
 
     if (out_buffer_mask != NULL)
@@ -1613,15 +1679,6 @@ IM_STATUS rga_check_feature(rga_buffer_t src, rga_buffer_t pat, rga_buffer_t dst
 
     if ((pat_enable ? (pat.color_space_mode & IM_RGB_TO_YUV_MASK) : 0) && (~feature_usage & IM_RGA_SUPPORT_FEATURE_SRC1_R2Y_CSC)) {
         IM_LOGW("The platform does not support src1 channel RGB2YUV color space convert featrue. \n%s",
-                querystring(RGA_FEATURE));
-        return IM_STATUS_NOT_SUPPORTED;
-    }
-
-    if ((src.color_space_mode & IM_FULL_CSC_MASK ||
-        dst.color_space_mode & IM_FULL_CSC_MASK ||
-        (pat_enable ? (pat.color_space_mode & IM_FULL_CSC_MASK) : 0)) &&
-        (~feature_usage & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC)) {
-        IM_LOGW("The platform does not support dst channel full color space convert(Y2Y/Y2R) featrue. \n%s",
                 querystring(RGA_FEATURE));
         return IM_STATUS_NOT_SUPPORTED;
     }

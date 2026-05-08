@@ -150,6 +150,7 @@ typedef enum {
     IM_RGB_TO_YUV_BT601_LIMIT   = 2 << 2,
     IM_RGB_TO_YUV_BT709_LIMIT   = 3 << 2,
     IM_RGB_TO_YUV_MASK          = 3 << 2,
+    IM_LEGACY_CSC_MASK          = (IM_YUV_TO_RGB_MASK | IM_RGB_TO_YUV_MASK),
     IM_RGB_TO_Y4                = 1 << 4,
     IM_RGB_TO_Y4_DITHER         = 2 << 4,
     IM_RGB_TO_Y1_DITHER         = 3 << 4,
