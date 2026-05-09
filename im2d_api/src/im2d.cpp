@@ -522,6 +522,8 @@ IM_API const char* querystring(int name) {
         "early_interruption ",
         "alpha_bit_map ",
         "gauss ",
+        "secure_access ",
+        "CFA ",
     };
     const char *performance[] = {
         "unknown",
@@ -774,6 +776,10 @@ IM_API const char* querystring(int name) {
                     out << feature[IM_RGA_SUPPORT_FEATURE_ALPHA_BIT_MAP_INDEX];
                 if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_GAUSS)
                     out << feature[IM_RGA_SUPPORT_FEATURE_GAUSS_INDEX];
+                if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_SECURE)
+                    out << feature[IM_RGA_SUPPORT_FEATURE_SECURE_INDEX];
+                if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_CFA)
+                    out << feature[IM_RGA_SUPPORT_FEATURE_CFA_INDEX];
                 out << endl;
                 break;
 
