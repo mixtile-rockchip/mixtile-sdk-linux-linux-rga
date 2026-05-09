@@ -73,6 +73,12 @@ struct rga_csc_mode {
     uint32_t output;
 };
 
+struct rga_csc_coef_version {
+    uint32_t pixel_depth;
+    uint32_t coef_precision;
+    const struct rga_csc_coef *csc_coefs;
+};
+
 static const struct rga_csc_mode g_csc_mode_table[] = {
     { IM_RGB_LIMIT_RANGE, IM_RGB_FULL_RANGE },                      // RGBL_TO_RGBF
     { IM_RGB_LIMIT_RANGE, IM_YUV_BT601_LIMIT_RANGE },               // RGBL_TO_YUV601L
@@ -128,6 +134,99 @@ static const struct rga_csc_mode g_csc_mode_table[] = {
     // { IM_COLOR_SPACE_DEFAULT, IM_COLOR_SPACE_DEFAULT},           // IDENTITY_MODE
 };
 
+/* for 8bit pixel depth + 8bit coef precision case */
+static const struct rga_csc_coef g_csc_coefs_8bit_pix_8bit_precision[] = {
+	{ 298,   0,   0,   0,  298,    0,   0,    0, 298 }, /* RGBL_TO_RGBF */
+	{  77, 150,  29, -44,  -87,  131, 131, -110, -21 }, /* RGBL_TO_YUV601L */
+	{  89, 175,  34, -50,  -99,  149, 149, -125, -24 }, /* RGBL_TO_YUV601F */
+	{  54, 183,  19, -30, -101,  131, 131, -119, -12 }, /* RGBL_TO_YUV709L */
+	{  63, 213,  22, -34, -115,  149, 149, -135, -14 }, /* RGBL_TO_YUV709F */
+	{  67, 174,  15, -37,  -94,  131, 131, -120, -11 }, /* RGB2020L_TO_YUV2020L */
+	{  78, 202,  18, -42, -107,  149, 149, -137, -12 }, /* RGB2020L_TO_YUV2020F */
+	{ 220,   0,   0,   0,  220,    0,   0,    0, 220 }, /* RGBF_TO_RGBL */
+	{  66, 129,  25, -38,  -74,  112, 112,  -94, -18 }, /* RGBF_TO_YUV601L */
+	{  77, 150,  29, -43,  -85,  128, 128, -107, -21 }, /* RGBF_TO_YUV601F */
+	{  47, 157,  16, -26,  -87,  113, 112, -102, -10 }, /* RGBF_TO_YUV709L */
+	{  54, 183,  19, -29,  -99,  128, 128, -116, -12 }, /* RGBF_TO_YUV709F */
+	{  58, 149,  13, -31,  -81,  112, 112, -103,  -9 }, /* RGB2020F_TO_YUV2020L */
+	{  67, 174,  15, -36,  -92,  128, 128, -118, -10 }, /* RGB2020F_TO_YUV2020F */
+	{ 256,   0, 351, 256,  -86, -179, 256,  444,   0 }, /* YUV601L_TO_RGBL */
+	{ 298,   0, 409, 298, -100, -208, 298,  516,   0 }, /* YUV601L_TO_RGBF */
+	{ 298,   0,   0,   0,  291,    0,   0,    0, 291 }, /* YUV601L_TO_YUV601F */
+	{ 256, -30, -53,   0,  261,   29,   0,   19, 262 }, /* YUV601L_TO_YUV709L */
+	{ 298, -34, -62,   0,  297,   33,   0,   22, 299 }, /* YUV601L_TO_YUV709F */
+	{ 220,   0, 308, 220,  -76, -157, 220,  390,   0 }, /* YUV601F_TO_RGBL */
+	{ 256,   0, 359, 256,  -88, -183, 256,  454,   0 }, /* YUV601F_TO_RGBF */
+	{ 220,   0,   0,   0,  225,    0,   0,    0, 225 }, /* YUV601F_TO_YUV601L */
+	{ 220, -26, -47,   0,  229,   26,   0,   17, 231 }, /* YUV601F_TO_YUV709L */
+	{ 256, -30, -54,   0,  261,   29,   0,   19, 262 }, /* YUV601F_TO_YUV709F */
+	{ 256,   0, 394, 256,  -47, -117, 256,  464,   0 }, /* YUV709L_TO_RGBL */
+	{ 298,   0, 459, 298,  -55, -136, 298,  541,   0 }, /* YUV709L_TO_RGBF */
+	{ 256,  25,  49,   0,  253,  -28,   0,  -19, 252 }, /* YUV709L_TO_YUV601L */
+	{ 298,  30,  57,   0,  288,  -32,   0,  -21, 287 }, /* YUV709L_TO_YUV601F */
+	{ 298,   0,   0,   0,  291,    0,   0,    0, 291 }, /* YUV709L_TO_YUV709F */
+	{ 220,   0, 346, 220,  -41, -103, 220,  408,   0 }, /* YUV709F_TO_RGBL */
+	{ 256,   0, 403, 256,  -48, -120, 256,  475,   0 }, /* YUV709F_TO_RGBF */
+	{ 220,  22,  43,   0,  223,  -25,   0,  -16, 221 }, /* YUV709F_TO_YUV601L */
+	{ 256,  26,  50,   0,  253,  -28,   0,  -19, 252 }, /* YUV709F_TO_YUV601F */
+	{ 220,   0,   0,   0,  225,    0,   0,    0, 225 }, /* YUV709F_TO_YUV709L */
+	{ 256,   0, 369, 256,  -41, -143, 256,  471,   0 }, /* YUV2020L_TO_RGB2020L */
+	{ 298,   0, 430, 298,  -48, -167, 298,  548,   0 }, /* YUV2020L_TO_RGB2020F */
+	{ 298,   0,   0,   0,  291,    0,   0,    0, 291 }, /* YUV2020L_TO_YUV2020F */
+	{ 220,   0, 324, 220,  -36, -126, 220,  414,   0 }, /* YUV2020F_TO_RGB2020L */
+	{ 256,   0, 377, 256,  -42, -146, 256,  482,   0 }, /* YUV2020F_TO_RGB2020F */
+	{ 220,   0,   0,   0,  225,    0,   0,    0, 225 }, /* YUV2020F_TO_YUV2020L */
+	{ 220,   0,   0,   0,  220,    0,   0,    0, 220 }, /* RGB2020F_TO_RGB2020L */
+	{ 298,   0,   0,   0,  298,    0,   0,    0, 298 }, /* RGB2020L_TO_RGB2020F */
+	// { 256,   0,   0,   0,  256,    0,   0,    0, 256 }, /* IDENTITY_MODE */
+};
+
+/* for 8bit pixel depth + 10bit coef precision case */
+static const struct rga_csc_coef g_csc_coefs_8bit_pix_10bit_precision[] = {
+	{ 1196,    0,    0,    0, 1196,    0,    0,    0, 1196 }, /* RGBL_TO_RGBF */
+	{  306,  601,  117, -177, -347,  524,  524, -439,  -85 }, /* RGBL_TO_YUV601L */
+	{  356,  700,  136, -202, -395,  596,  596, -499,  -97 }, /* RGBL_TO_YUV601F */
+	{  218,  732,   74, -120, -404,  524,  524, -476,  -48 }, /* RGBL_TO_YUV709L */
+	{  253,  853,   86, -137, -459,  596,  596, -541,  -55 }, /* RGBL_TO_YUV709F */
+	{  269,  694,   61, -146, -378,  524,  524, -482,  -42 }, /* RGB2020L_TO_YUV2020L */
+	{  313,  808,   71, -166, -430,  596,  596, -548,  -48 }, /* RGB2020L_TO_YUV2020F */
+	{  879,    0,    0,    0,  879,    0,    0,    0,  879 }, /* RGBF_TO_RGBL */
+	{  263,  516,  100, -152, -298,  450,  450, -377,  -73 }, /* RGBF_TO_YUV601L */
+	{  306,  601,  117, -173, -339,  512,  512, -429,  -83 }, /* RGBF_TO_YUV601F */
+	{  187,  629,   63, -103, -347,  450,  450, -409,  -41 }, /* RGBF_TO_YUV709L */
+	{  218,  732,   74, -117, -395,  512,  512, -465,  -47 }, /* RGBF_TO_YUV709F */
+	{  231,  596,   52, -126, -324,  450,  450, -414,  -36 }, /* RGB2020F_TO_YUV2020L */
+	{  269,  694,   61, -143, -369,  512,  512, -471,  -41 }, /* RGB2020F_TO_YUV2020F */
+	{ 1024,    0, 1404, 1024, -345, -715, 1024, 1774,    0 }, /* YUV601L_TO_RGBL */
+	{ 1192,    0, 1634, 1192, -401, -832, 1192, 2066,    0 }, /* YUV601L_TO_RGBF */
+	{ 1192,    0,    0,    0, 1166,    0,    0,    0, 1166 }, /* YUV601L_TO_YUV601F */
+	{ 1024, -118, -213,    0, 1043,  117,    0,   77, 1050 }, /* YUV601L_TO_YUV709L */
+	{ 1192, -138, -248,    0, 1187,  134,    0,   87, 1195 }, /* YUV601L_TO_YUV709F */
+	{  879,    0, 1233,  879, -303, -628,  879, 1558,    0 }, /* YUV601F_TO_RGBL */
+	{ 1024,    0, 1436, 1024, -352, -731, 1024, 1815,    0 }, /* YUV601F_TO_RGBF */
+	{  879,    0,    0,    0,  900,    0,    0,    0,  900 }, /* YUV601F_TO_YUV601L */
+	{  879, -104, -187,    0,  916,  103,    0,   68,  922 }, /* YUV601F_TO_YUV709L */
+	{ 1024, -121, -218,    0, 1043,  117,    0,   77, 1050 }, /* YUV601F_TO_YUV709F */
+	{ 1024,    0, 1577, 1024, -188, -469, 1024, 1858,    0 }, /* YUV709L_TO_RGBL */
+	{ 1192,    0, 1836, 1192, -218, -546, 1192, 2163,    0 }, /* YUV709L_TO_RGBF */
+	{ 1024,  102,  196,    0, 1014, -113,    0,  -74, 1007 }, /* YUV709L_TO_YUV601L */
+	{ 1192,  118,  229,    0, 1154, -129,    0,  -84, 1146 }, /* YUV709L_TO_YUV601F */
+	{ 1192,    0,    0,    0, 1166,    0,    0,    0, 1166 }, /* YUV709L_TO_YUV709F */
+	{  879,    0, 1385,  879, -165, -412,  879, 1632,    0 }, /* YUV709F_TO_RGBL */
+	{ 1024,    0, 1613, 1024, -192, -479, 1024, 1900,    0 }, /* YUV709F_TO_RGBF */
+	{  879,   89,  172,    0,  890,  -100,    0,  -65,  885 }, /* YUV709F_TO_YUV601L */
+	{ 1024,  104,  201,    0, 1014, -113,    0,  -74, 1007 }, /* YUV709F_TO_YUV601F */
+	{  879,    0,    0,    0,  900,    0,    0,    0,  900 }, /* YUV709F_TO_YUV709L */
+	{ 1024,    0, 1476, 1024, -165, -572, 1024, 1884,    0 }, /* YUV2020L_TO_RGB2020L */
+	{ 1192,    0, 1719, 1192, -192, -666, 1192, 2193,    0 }, /* YUV2020L_TO_RGB2020F */
+	{ 1192,    0,    0,    0, 1166,    0,    0,    0, 1166 }, /* YUV2020L_TO_YUV2020F */
+	{  879,    0, 1297,  879, -145, -502,  879, 1655,    0 }, /* YUV2020F_TO_RGB2020L */
+	{ 1024,    0, 1510, 1024, -169, -585, 1024, 1927,    0 }, /* YUV2020F_TO_RGB2020F */
+	{  879,    0,    0,    0,  900,    0,    0,    0,  900 }, /* YUV2020F_TO_YUV2020L */
+	{  879,    0,    0,    0,  879,    0,    0,    0,  879 }, /* RGB2020F_TO_RGB2020L */
+	{ 1192,    0,    0,    0, 1192,    0,    0,    0, 1192 }, /* RGB2020L_TO_RGB2020F */
+	// { 1024,    0,    0,    0, 1024,    0,    0,    0, 1024 }, /* IDENTITY_MODE */
+};
 
 static const struct rga_csc_coef g_csc_coefs_10bit_pix_10bit_precision[] = {
     { 1196,    0,    0,    0, 1196,    0,    0,    0, 1196 }, /* RGBL_TO_RGBF */
@@ -183,6 +282,12 @@ static const struct rga_csc_coef g_csc_coefs_10bit_pix_10bit_precision[] = {
 	// { 1024,    0,    0,    0, 1024,    0,    0,    0, 1024 }, /* IDENTITY_MODE */
 };
 
+static const struct rga_csc_coef_version g_csc_coef_version_table[] = {
+    {8, 8, g_csc_coefs_8bit_pix_8bit_precision},
+    {8, 10, g_csc_coefs_8bit_pix_10bit_precision},
+    {10, 10, g_csc_coefs_10bit_pix_10bit_precision},
+};
+
 static struct rga_csc_clip g_csc_clip_8bit[] = {
     { { 0xff, 0x0}, { 0xff, 0x0} },     //yuv full range Y[255,0] UV[255,0], rgb full range RGB[255,0]
     { { 0xeb, 0x10}, { 0xf0, 0x10} },   //yuv limit range Y[235,16] UV[240,16]
@@ -232,18 +337,35 @@ int rga_setup_default_RGB_color_space_mode(struct rga_csc_channel_info *info) {
 const struct rga_csc_coef *rga_get_csc_matrix(struct rga_csc_convert_mode *mode)
 {
     int i;
-    const struct rga_csc_coef *csc_coefs;
+    const struct rga_csc_coef *csc_coefs = NULL;
 
     if (mode == NULL)
         return NULL;
 
-    csc_coefs = g_csc_coefs_10bit_pix_10bit_precision;
+    /* Search for coef table at different csc precision */
+	for (i = 0; i < sizeof(g_csc_coef_version_table) / sizeof(g_csc_coef_version_table[0]); i++) {
+		if ((g_csc_coef_version_table[i].pixel_depth == mode->pixel_depth) &&
+		    (g_csc_coef_version_table[i].coef_precision == mode->coef_precision)) {
+			csc_coefs = g_csc_coef_version_table[i].csc_coefs;
+			break;
+		}
+	}
+
+    if (csc_coefs == NULL) {
+        IM_LOGE("Unsupported CSC Matrix version: pixel_depth[%d], coef_precision[%d]",
+                 mode->pixel_depth, mode->coef_precision);
+        return NULL;
+    }
 
     for (i = 0; i < sizeof(g_csc_mode_table) / sizeof(g_csc_mode_table[0]); i++) {
         if (g_csc_mode_table[i].input == mode->input.color_space &&
             g_csc_mode_table[i].output == mode->output.color_space)
             return &csc_coefs[i];
     }
+
+    IM_LOGE("Unsupported CSC mode: [%s(%#x)] -> [%s(%#x)]",
+            string_color_space(mode->input.color_space), mode->input.color_space,
+            string_color_space(mode->output.color_space), mode->output.color_space);
 
     return NULL;
 }
@@ -479,14 +601,8 @@ int rga_csc_setup_matrix(struct rga_req *msg, struct rga_csc_convert_mode *conve
 
     //find csc mode
     csc_coef = rga_get_csc_matrix(convert_mode);
-    if (csc_coef == NULL) {
-        IM_LOGE("Unsupported CSC mode: [%s(%#x)] -> [%s(%#x)]",
-                 string_color_space(convert_mode->input.color_space),
-                 convert_mode->input.color_space,
-                 string_color_space(convert_mode->output.color_space),
-                 convert_mode->output.color_space);
+    if (csc_coef == NULL)
         return IM_STATUS_NOT_SUPPORTED;
-    }
 
     /* Validate CSC coefficients against hardware constraints */
     ret = rga_csc_check_coef(csc_coef, convert_mode);
