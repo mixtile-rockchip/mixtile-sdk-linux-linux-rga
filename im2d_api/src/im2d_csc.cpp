@@ -425,7 +425,45 @@ static void rga_csc_setup_full_csc(struct rga_req *msg, struct rga_csc_convert_m
     msg->feature.full_csc_clip_en = true;
 }
 
+static int rga_csc_check_coef(const struct rga_csc_coef *coef, struct rga_csc_convert_mode *convert_mode) {
+    int i;
+    int32_t coef_array[9];
+    int64_t coef_abs;
+    int64_t coef_integer;
+
+    coef_array[0] = coef->coef00;
+    coef_array[1] = coef->coef01;
+    coef_array[2] = coef->coef02;
+    coef_array[3] = coef->coef10;
+    coef_array[4] = coef->coef11;
+    coef_array[5] = coef->coef12;
+    coef_array[6] = coef->coef20;
+    coef_array[7] = coef->coef21;
+    coef_array[8] = coef->coef22;
+
+    for (i = 0; i < 9; i++) {
+        coef_abs = (int64_t)coef_array[i];
+        coef_abs = (coef_abs < 0) ? -coef_abs : coef_abs;
+        coef_integer = coef_abs >> convert_mode->coef_precision;
+
+        if (coef_integer > convert_mode->coef_integer) {
+            IM_LOGE("Unsupported CSC mode: [%s(%#x)] -> [%s(%#x)], coef[%#x(%d)] with integer parts[%#llx] greater than %d are not supported.",
+                 string_color_space(convert_mode->input.color_space),
+                 convert_mode->input.color_space,
+                 string_color_space(convert_mode->output.color_space),
+                 convert_mode->output.color_space,
+                 coef_array[i], coef_array[i],
+                 (unsigned long long)coef_integer,
+                 convert_mode->coef_integer);
+            return IM_STATUS_NOT_SUPPORTED;
+        }
+    }
+
+    return IM_STATUS_SUCCESS;
+}
+
 int rga_csc_setup_matrix(struct rga_req *msg, struct rga_csc_convert_mode *convert_mode) {
+    int ret;
     const struct rga_csc_coef *csc_coef;
     const struct rga_csc_clip *clip;
     struct rga_csc_coef matrix;
@@ -449,6 +487,11 @@ int rga_csc_setup_matrix(struct rga_req *msg, struct rga_csc_convert_mode *conve
                  convert_mode->output.color_space);
         return IM_STATUS_NOT_SUPPORTED;
     }
+
+    /* Validate CSC coefficients against hardware constraints */
+    ret = rga_csc_check_coef(csc_coef, convert_mode);
+    if (ret != IM_STATUS_SUCCESS)
+        return ret;
 
     rga_calc_output_coef(convert_mode, csc_coef, &matrix, &vector);
 
