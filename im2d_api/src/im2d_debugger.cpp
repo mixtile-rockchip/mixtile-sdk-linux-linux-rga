@@ -74,18 +74,26 @@ const char *string_color_space(uint32_t mode) {
             return "rgb-to-y1-dither";
         case IM_COLOR_SPACE_DEFAULT:
             return "default";
-        case IM_RGB_FULL:
-            return "rgb_full";
-        case IM_RGB_CLIP:
-            return "rga_clip";
+        case IM_RGB_FULL_RANGE:
+            return "rgb-full";
+        case IM_RGB_LIMIT_RANGE:
+            return "rgb-limit";
+        case IM_RGB_BT2020_LIMIT_RANGE:
+            return "rgb-bt.2020-limit";
+        case IM_RGB_BT2020_FULL_RANGE:
+            return "rgb-bt.2020-full";
         case IM_YUV_BT601_LIMIT_RANGE:
-            return "yuv_bt.601-limit";
+            return "yuv-bt.601-limit";
         case IM_YUV_BT601_FULL_RANGE:
-            return "yuv_bt.601-full";
+            return "yuv-bt.601-full";
         case IM_YUV_BT709_LIMIT_RANGE:
-            return "yuv_bt.709-limit";
+            return "yuv-bt.709-limit";
         case IM_YUV_BT709_FULL_RANGE:
-            return "yuv_bt.709-full";
+            return "yuv-bt.709-full";
+        case IM_YUV_BT2020_LIMIT_RANGE:
+            return "yuv-bt.2020-limit";
+        case IM_YUV_BT2020_FULL_RANGE:
+            return "yuv-bt.2020-full";
         default:
             return "unknown";
     }

@@ -161,6 +161,12 @@ typedef enum {
     IM_YUV_BT601_FULL_RANGE     = 4 << 8,
     IM_YUV_BT709_LIMIT_RANGE    = 5 << 8,
     IM_YUV_BT709_FULL_RANGE     = 6 << 8,
+    IM_YUV_BT2020_LIMIT_RANGE   = 7 << 8,
+    IM_YUV_BT2020_FULL_RANGE    = 8 << 8,
+    IM_RGB_FULL_RANGE           = IM_RGB_FULL,
+    IM_RGB_LIMIT_RANGE          = IM_RGB_CLIP,
+    IM_RGB_BT2020_LIMIT_RANGE   = 9 << 8,
+    IM_RGB_BT2020_FULL_RANGE    = 10 << 8,
     IM_FULL_CSC_MASK            = 0xf << 8,
     IM_COLOR_SPACE_DEFAULT      = 0,
 } IM_COLOR_SPACE_MODE;

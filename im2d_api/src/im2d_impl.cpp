@@ -732,7 +732,7 @@ IM_STATUS static rga_set_buffer_info(const char *name, rga_buffer_t image, rga_i
 static int rga_get_default_csc_mode(int format)
 {
     if  (is_rgb_format(format)) {
-        return IM_RGB_FULL;
+        return IM_RGB_FULL_RANGE;
     } else if (is_yuv_format(format)) {
         return IM_YUV_BT601_LIMIT_RANGE;
     }
@@ -1610,8 +1610,10 @@ IM_STATUS rga_check_align(const char *name, rga_buffer_t info, int byte_stride, 
 IM_STATUS rga_check_color_space(const char *name, int format, int color_space)
 {
     switch (color_space & IM_FULL_CSC_MASK) {
-        case IM_RGB_FULL:
-        case IM_RGB_CLIP:
+        case IM_RGB_FULL_RANGE:
+        case IM_RGB_LIMIT_RANGE:
+        case IM_RGB_BT2020_LIMIT_RANGE:
+        case IM_RGB_BT2020_FULL_RANGE:
             if (!is_rgb_format(format)) {
                 IM_LOGW("%s color space mode [%s(%#x)] does not match format [%s(%#x)]!",
                         name,
@@ -1624,6 +1626,8 @@ IM_STATUS rga_check_color_space(const char *name, int format, int color_space)
         case IM_YUV_BT601_FULL_RANGE:
         case IM_YUV_BT709_LIMIT_RANGE:
         case IM_YUV_BT709_FULL_RANGE:
+        case IM_YUV_BT2020_LIMIT_RANGE:
+        case IM_YUV_BT2020_FULL_RANGE:
             if (!is_yuv_format(format)) {
                 IM_LOGW("%s color space mode [%s(%#x)] does not match format [%s(%#x)]!",
                         name,
@@ -2102,7 +2106,7 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
     int mode = 0;
 
     switch (in) {
-        case IM_RGB_FULL:
+        case IM_RGB_FULL_RANGE:
             switch (out) {
                 case IM_YUV_BT601_LIMIT_RANGE:
                     mode = IM_RGB_TO_YUV_BT601_LIMIT;
@@ -2134,7 +2138,7 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
 
         case IM_YUV_BT601_LIMIT_RANGE:
             switch (out) {
-                case IM_RGB_FULL:
+                case IM_RGB_FULL_RANGE:
                     mode = IM_YUV_TO_RGB_BT601_LIMIT;
                     break;
                 case IM_YUV_BT601_FULL_RANGE:
@@ -2159,7 +2163,7 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
 
         case IM_YUV_BT601_FULL_RANGE:
             switch (out) {
-                case IM_RGB_FULL:
+                case IM_RGB_FULL_RANGE:
                     mode = IM_YUV_TO_RGB_BT601_FULL;
                     break;
                 case IM_YUV_BT601_LIMIT_RANGE:
@@ -2184,7 +2188,7 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
 
         case IM_YUV_BT709_LIMIT_RANGE:
             switch (out) {
-                case IM_RGB_FULL:
+                case IM_RGB_FULL_RANGE:
                     mode = IM_YUV_TO_RGB_BT709_LIMIT;
                     break;
                 case IM_YUV_BT601_LIMIT_RANGE:
@@ -2318,10 +2322,10 @@ static int rga_generate_cfa_config(struct rga_req *req, rga_buffer_t *src, rga_b
     ctrl0.bits.sw_cfa_c2p_id = c2p_info->c2p_id;
     if (is_rgb_format(src->format)) {
         switch (src->color_space_mode) {
-            case IM_RGB_FULL:
+            case IM_RGB_FULL_RANGE:
                 ctrl0.bits.sw_cfa_r2y_clip = false;
                 break;
-            case IM_RGB_CLIP:
+            case IM_RGB_LIMIT_RANGE:
                 ctrl0.bits.sw_cfa_r2y_clip = true;
                 break;
             default:
