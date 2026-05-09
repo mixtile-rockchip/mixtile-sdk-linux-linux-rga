@@ -33,6 +33,7 @@
 
 #include "im2d.h"
 #include "im2d_job.h"
+#include "im2d_csc.h"
 #include "im2d_log.h"
 #include "im2d_hardware.h"
 #include "im2d_debugger.h"
@@ -2101,9 +2102,19 @@ static IM_STATUS rga_generate_gauss_coe(im_gauss_t *gauss, struct rga_gauss_conf
     return IM_STATUS_SUCCESS;
 }
 
+/*
+ * Return:
+ *   0              - input and output color spaces are identical, no conversion needed
+ *   constant CSC   - a matching preset CSC mode is found
+ *                    (e.g. IM_RGB_TO_YUV_BT601_LIMIT, IM_YUV_TO_RGB_BT709_LIMIT)
+ *   full_csc_mask  - no matching preset; full_csc matrix must be used instead
+ */
 static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
 {
     int mode = 0;
+
+    if (in == out)
+        return 0;
 
     switch (in) {
         case IM_RGB_FULL_RANGE:
@@ -2115,23 +2126,10 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
                     mode = IM_RGB_TO_YUV_BT601_FULL;
                     break;
                 case IM_YUV_BT709_LIMIT_RANGE:
-                    if (entry->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_MASK)
-                        mode = rgb2yuv_709_limit;
-                    else
-                        mode = IM_RGB_TO_YUV_BT709_LIMIT;
-
+                    mode = IM_RGB_TO_YUV_BT709_LIMIT;
                     break;
-                case IM_YUV_BT709_FULL_RANGE:
-                    mode = rgb2yuv_709_full;
-                    break;
-                case IM_RGB_FULL:
-                    break;
-                case IM_RGB_CLIP:
                 default:
-                    IM_LOGW("Unsupported full CSC mode! src %s(0x%x), dst %s(0x%x)",
-                            string_color_space(in), in,
-                            string_color_space(out), out);
-                    return IM_STATUS_NOT_SUPPORTED;
+                    break;
             }
 
             break;
@@ -2141,23 +2139,8 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
                 case IM_RGB_FULL_RANGE:
                     mode = IM_YUV_TO_RGB_BT601_LIMIT;
                     break;
-                case IM_YUV_BT601_FULL_RANGE:
-                    mode = yuv2yuv_601_limit_2_601_full;
-                    break;
-                case IM_YUV_BT709_LIMIT_RANGE:
-                    mode = yuv2yuv_601_limit_2_709_limit;
-                    break;
-                case IM_YUV_BT709_FULL_RANGE:
-                    mode = yuv2yuv_601_limit_2_709_full;
-                    break;
-                case IM_YUV_BT601_LIMIT_RANGE:
-                    break;
-                case IM_RGB_CLIP:
                 default:
-                    IM_LOGW("Unsupported full CSC mode! src %s(0x%x), dst %s(0x%x)",
-                            string_color_space(in), in,
-                            string_color_space(out), out);
-                    return IM_STATUS_NOT_SUPPORTED;
+                    break;
             }
             break;
 
@@ -2166,23 +2149,8 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
                 case IM_RGB_FULL_RANGE:
                     mode = IM_YUV_TO_RGB_BT601_FULL;
                     break;
-                case IM_YUV_BT601_LIMIT_RANGE:
-                    mode = yuv2yuv_601_full_2_601_limit;
-                    break;
-                case IM_YUV_BT709_LIMIT_RANGE:
-                    mode = yuv2yuv_601_full_2_709_limit;
-                    break;
-                case IM_YUV_BT709_FULL_RANGE:
-                    mode = yuv2yuv_601_full_2_709_full;
-                    break;
-                case IM_YUV_BT601_FULL_RANGE:
-                    break;
-                case IM_RGB_CLIP:
                 default:
-                    IM_LOGW("Unsupported full CSC mode! src %s(0x%x), dst %s(0x%x)",
-                            string_color_space(in), in,
-                            string_color_space(out), out);
-                    return IM_STATUS_NOT_SUPPORTED;
+                    break;
             }
             break;
 
@@ -2191,60 +2159,19 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
                 case IM_RGB_FULL_RANGE:
                     mode = IM_YUV_TO_RGB_BT709_LIMIT;
                     break;
-                case IM_YUV_BT601_LIMIT_RANGE:
-                    mode = yuv2yuv_709_limit_2_601_limit;
-                    break;
-                case IM_YUV_BT601_FULL_RANGE:
-                    mode = yuv2yuv_709_limit_2_601_full;
-                    break;
-                case IM_YUV_BT709_FULL_RANGE:
-                    mode = yuv2yuv_709_limit_2_709_full;
-                    break;
-                case IM_YUV_BT709_LIMIT_RANGE:
-                    break;
-                case IM_RGB_CLIP:
                 default:
-                    IM_LOGW("Unsupported full CSC mode! src %s(0x%x), dst %s(0x%x)",
-                            string_color_space(in), in,
-                            string_color_space(out), out);
-                    return IM_STATUS_NOT_SUPPORTED;
+                    break;
             }
             break;
 
-        case IM_YUV_BT709_FULL_RANGE:
-            switch (out) {
-                case IM_RGB_FULL:
-                    mode = yuv2rgb_709_full;
-                    break;
-                case IM_YUV_BT601_LIMIT_RANGE:
-                    mode = yuv2yuv_709_full_2_601_limit;
-                    break;
-                case IM_YUV_BT601_FULL_RANGE:
-                    mode = yuv2yuv_709_full_2_601_full;
-                    break;
-                case IM_YUV_BT709_LIMIT_RANGE:
-                    mode = yuv2yuv_709_full_2_709_limit;
-                    break;
-                case IM_YUV_BT709_FULL_RANGE:
-                    break;
-                case IM_RGB_CLIP:
-                default:
-                    IM_LOGW("Unsupported full CSC mode! src %s(0x%x), dst %s(0x%x)",
-                            string_color_space(in), in,
-                            string_color_space(out), out);
-                    return IM_STATUS_NOT_SUPPORTED;
-            }
-            break;
-
-        case IM_RGB_CLIP:
         default:
-            IM_LOGW("Unsupported full CSC mode! src %s(0x%x), dst %s(0x%x)",
-                    string_color_space(in), in,
-                    string_color_space(out), out);
-            return IM_STATUS_NOT_SUPPORTED;
+            break;
     }
 
-    return mode;
+    if (mode > 0)
+        return mode;
+    else
+        return full_csc_mask;
 }
 
 static const struct rga_cfa_c2p_info *rga_cfa_get_c2p_info(uint32_t pattern) {
@@ -2401,6 +2328,105 @@ static int rga_generate_cfa_config(struct rga_req *req, rga_buffer_t *src, rga_b
             }
 
             break;
+    }
+
+    return IM_STATUS_SUCCESS;
+}
+
+static int rga_generate_csc_config(struct rga_req *req, rga_info_table_entry *hardware,
+                                   rga_buffer_t *src, rga_buffer_t *src1, rga_buffer_t *dst,
+                                   uint64_t usage) {
+    int ret = IM_STATUS_SUCCESS;
+    uint32_t const_csc_mode = 0;
+    uint32_t mode;
+    bool need_full_csc = false;
+    bool is_blend = (usage & IM_ALPHA_BLEND_MASK) ? true : false;
+    bool is_fill = (usage & IM_COLOR_FILL) ? true : false;
+    struct rga_csc_convert_mode convert_mode = {};
+
+    /*
+     * Convert to RGB space by default for blending, YUV blending is
+     * currently not supported.
+     */
+    if (is_blend) {
+        mode = rga_get_csc_mode(hardware,
+                                src->color_space_mode,
+                                IM_RGB_FULL_RANGE);
+        if (mode & IM_YUV_TO_RGB_MASK) {
+            const_csc_mode |= mode & IM_YUV_TO_RGB_MASK;
+        } else if (mode != 0) {
+            IM_LOGE("unsupported CSC, src[%s(%#x)] -> [%s(%#x)], blend requires RGB-based",
+                    string_color_space(src->color_space_mode), src->color_space_mode,
+                    string_color_space(IM_RGB_FULL_RANGE), IM_RGB_FULL_RANGE);
+            return IM_STATUS_NOT_SUPPORTED;
+        }
+
+        if (src1 != NULL) {
+            mode = rga_get_csc_mode(hardware,
+                                    src1->color_space_mode,
+                                    IM_RGB_FULL_RANGE);
+            if (mode != 0) {
+                IM_LOGE("unsupported CSC, src1[%s(%#x)] -> [%s(%#x)], blend requires RGB-based",
+                        string_color_space(src1->color_space_mode), src1->color_space_mode,
+                        string_color_space(IM_RGB_FULL_RANGE), IM_RGB_FULL_RANGE);
+                return IM_STATUS_NOT_SUPPORTED;
+            }
+        }
+
+        mode = rga_get_csc_mode(hardware,
+                                IM_RGB_FULL_RANGE,
+                                dst->color_space_mode);
+        if (mode & IM_RGB_TO_YUV_MASK)
+            const_csc_mode |= mode & IM_RGB_TO_YUV_MASK;
+        else if (mode != 0)
+            need_full_csc = true;
+    } else {
+        mode = rga_get_csc_mode(hardware,
+                                is_fill ? IM_RGB_FULL_RANGE : src->color_space_mode,
+                                dst->color_space_mode);
+        if (mode & (IM_YUV_TO_RGB_MASK | IM_RGB_TO_YUV_MASK))
+            const_csc_mode |= mode & (IM_YUV_TO_RGB_MASK | IM_RGB_TO_YUV_MASK);
+        else if (mode != 0)
+            need_full_csc = true;
+    }
+
+    /*  When configured as 709_limit, full_csc of RGA2 is preferred. */
+    if ((const_csc_mode & IM_RGB_TO_YUV_MASK) == IM_RGB_TO_YUV_BT709_LIMIT &&
+        (hardware->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_MASK))
+        need_full_csc = true;
+
+    req->yuv2rgb_mode = const_csc_mode;
+
+    if (need_full_csc) {
+        if (is_fill || is_blend)
+            rga_setup_default_RGB_color_space_mode(&convert_mode.input);
+        else
+            rga_setup_color_space_mode(&convert_mode.input, src->format, src->color_space_mode);
+
+        rga_setup_color_space_mode(&convert_mode.output, dst->format, dst->color_space_mode);
+
+        convert_mode.pixel_depth = hardware->pixel_depth;
+        switch (hardware->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_MASK) {
+            case IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V1:
+                convert_mode.coef_integer = 0;
+                convert_mode.coef_precision = 10;
+                break;
+            case IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V2:
+                convert_mode.coef_integer = 2;
+                convert_mode.coef_precision = 8;
+                break;
+            case IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V3:
+                convert_mode.coef_integer = 2;
+                convert_mode.coef_precision = 10;
+                break;
+            default:
+                IM_LOGW("Unsupported full CSC, feature[%#x]!", hardware->feature);
+                return IM_STATUS_NOT_SUPPORTED;
+        }
+
+        ret = rga_csc_setup_matrix(req, &convert_mode);
+        if (ret != IM_STATUS_SUCCESS)
+            return ret;
     }
 
     return IM_STATUS_SUCCESS;
@@ -2701,100 +2727,6 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
         }
     }
 
-    /* special config for color space convert */
-    if ((dst.color_space_mode & IM_YUV_TO_RGB_MASK) && (dst.color_space_mode & IM_RGB_TO_YUV_MASK)) {
-        if (rga_is_buffer_valid(&pat) &&
-            is_yuv_format(src.format) &&
-            is_rgb_format(pat.format) &&
-            is_yuv_format(dst.format)) {
-            /* When configured as 709_limit, full_csc of RGA2 is preferred. */
-            if (((dst.color_space_mode & IM_RGB_TO_YUV_MASK) == IM_RGB_TO_YUV_BT709_LIMIT) &&
-                (session->hardware_info.feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_MASK)) {
-                dstinfo.color_space_mode = (dst.color_space_mode & IM_YUV_TO_RGB_MASK) | rgb2yuv_709_limit;
-            } else {
-                dstinfo.color_space_mode = dst.color_space_mode;
-            }
-        } else {
-            IM_LOGW("Not yuv + rgb -> yuv does not need for color_sapce_mode R2Y & Y2R, please fix, "
-                    "src_fromat = 0x%x(%s), src1_format = 0x%x(%s), dst_format = 0x%x(%s)",
-                    src.format, translate_format_str(src.format),
-                    pat.format, translate_format_str(pat.format),
-                    dst.format, translate_format_str(dst.format));
-            return IM_STATUS_ILLEGAL_PARAM;
-        }
-    } else if (dst.color_space_mode & (IM_YUV_TO_RGB_MASK)) {
-        if (rga_is_buffer_valid(&pat) &&
-            is_yuv_format(src.format) &&
-            is_rgb_format(pat.format) &&
-            is_rgb_format(dst.format)) {
-            dstinfo.color_space_mode = dst.color_space_mode;
-        } else if (is_yuv_format(src.format) &&
-                   is_rgb_format(dst.format)) {
-            dstinfo.color_space_mode = dst.color_space_mode;
-        } else {
-            IM_LOGW("Not yuv to rgb does not need for color_sapce_mode, please fix, "
-                    "src_fromat = 0x%x(%s), src1_format = 0x%x(%s), dst_format = 0x%x(%s)",
-                    src.format, translate_format_str(src.format),
-                    pat.format, rga_is_buffer_valid(&pat) ? translate_format_str(pat.format) : "none",
-                    dst.format, translate_format_str(dst.format));
-            return IM_STATUS_ILLEGAL_PARAM;
-        }
-    } else if (dst.color_space_mode & (IM_RGB_TO_YUV_MASK)) {
-        if (rga_is_buffer_valid(&pat) &&
-            is_rgb_format(src.format) &&
-            is_rgb_format(pat.format) &&
-            is_yuv_format(dst.format)) {
-            dstinfo.color_space_mode = dst.color_space_mode;
-        } else if (is_rgb_format(src.format) &&
-                   is_yuv_format(dst.format)) {
-            /* When configured as 709_limit, full_csc of RGA2 is preferred. */
-            if (((dst.color_space_mode & IM_RGB_TO_YUV_MASK) == IM_RGB_TO_YUV_BT709_LIMIT) &&
-                (session->hardware_info.feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_MASK)) {
-                dstinfo.color_space_mode = rgb2yuv_709_limit;
-            } else {
-                dstinfo.color_space_mode = dst.color_space_mode;
-            }
-        } else {
-            IM_LOGW("Not rgb to yuv does not need for color_sapce_mode, please fix, "
-                    "src_fromat = 0x%x(%s), src1_format = 0x%x(%s), dst_format = 0x%x(%s)",
-                    src.format, translate_format_str(src.format),
-                    pat.format, rga_is_buffer_valid(&pat) ? translate_format_str(pat.format) : "none",
-                    dst.format, translate_format_str(dst.format));
-            return IM_STATUS_ILLEGAL_PARAM;
-        }
-    } else if (src.color_space_mode & IM_FULL_CSC_MASK ||
-               pat.color_space_mode & IM_FULL_CSC_MASK ||
-               dst.color_space_mode & IM_FULL_CSC_MASK) {
-        if (src.color_space_mode == IM_COLOR_SPACE_DEFAULT)
-            src.color_space_mode = rga_get_default_csc_mode(src.format);
-        if (pat.color_space_mode == IM_COLOR_SPACE_DEFAULT)
-            pat.color_space_mode = rga_get_default_csc_mode(pat.format);
-        if (dst.color_space_mode == IM_COLOR_SPACE_DEFAULT)
-            dst.color_space_mode = rga_get_default_csc_mode(dst.format);
-
-        if (rga_is_buffer_valid(&pat)) {
-            if (!is_rgb_format(pat.format)) {
-                IM_LOGW("src1/pat channel only support RGBA/RGB format, please fix, "
-                        "src_fromat = 0x%x(%s), src1_format = 0x%x(%s), dst_format = 0x%x(%s)",
-                        src.format, translate_format_str(src.format),
-                        pat.format, rga_is_buffer_valid(&pat) ? translate_format_str(pat.format) : "none",
-                        dst.format, translate_format_str(dst.format));
-                return IM_STATUS_ILLEGAL_PARAM;
-            }
-
-            dstinfo.color_space_mode =
-                rga_get_csc_mode(&session->hardware_info,
-                                 src.color_space_mode, pat.color_space_mode);
-            dstinfo.color_space_mode |=
-                rga_get_csc_mode(&session->hardware_info,
-                                 pat.color_space_mode, dst.color_space_mode);
-        } else {
-            dstinfo.color_space_mode =
-                rga_get_csc_mode(&session->hardware_info,
-                                 src.color_space_mode, dst.color_space_mode);
-        }
-    }
-
     if (dst.format == RK_FORMAT_Y4 || dst.format == RK_FORMAT_Y8) {
         switch (dst.color_space_mode) {
             case IM_RGB_TO_Y4 :
@@ -2894,6 +2826,13 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
 
     if (usage & IM_CFA)
         rga_generate_cfa_config(&req, &src, &dst, &opt_ptr->cfa_config);
+
+    if (buffer_mask & RGA_TASK_BUFFER_SRC1_EN)
+        ret = rga_generate_csc_config(&req, &session->hardware_info, &src, &pat, &dst, usage);
+    else
+        ret = rga_generate_csc_config(&req, &session->hardware_info, &src, NULL, &dst, usage);
+    if (ret != IM_STATUS_SUCCESS)
+        goto release_resource;
 
     if (job_handle > 0) {
         im_rga_job_t *job = NULL;
@@ -3198,7 +3137,6 @@ int generate_blit_req(struct rga_req *ioc_req, rga_info_t *src, rga_info_t *dst,
     rga_rect_t relSrc1Rect,tmpSrc1Rect;
     unsigned int blend;
     unsigned int yuvToRgbMode;
-    unsigned int r2y_mode = 0, y2r_mode = 0;
     bool perpixelAlpha = 0;
     void *srcBuf = NULL;
     void *dstBuf = NULL;
@@ -4126,60 +4064,6 @@ int generate_blit_req(struct rga_req *ioc_req, rga_info_t *src, rga_info_t *dst,
     if (src1)
         NormalRgaSetPatActiveInfo(&rgaReg, src1ActW, src1ActH, src1XPos, src1YPos);
 
-    /* generate default csc mode */
-    if (src1) {
-        /* special config for yuv + rgb => rgb */
-        /* src0 y2r, src1 bupass, dst bupass */
-        if (NormalRgaIsYuvFormat(RkRgaGetRgaFormat(relSrcRect.format)) &&
-            NormalRgaIsRgbFormat(RkRgaGetRgaFormat(relSrc1Rect.format)) &&
-            NormalRgaIsRgbFormat(RkRgaGetRgaFormat(relDstRect.format)))
-            y2r_mode = IM_YUV_TO_RGB_BT601_LIMIT;
-
-        /* special config for yuv + rgba => yuv on src1 */
-        /* src0 y2r, src1 bupass, dst y2r */
-        if (NormalRgaIsYuvFormat(RkRgaGetRgaFormat(relSrcRect.format)) &&
-            NormalRgaIsRgbFormat(RkRgaGetRgaFormat(relSrc1Rect.format)) &&
-            NormalRgaIsYuvFormat(RkRgaGetRgaFormat(relDstRect.format))) {
-            y2r_mode = IM_YUV_TO_RGB_BT601_LIMIT;
-            r2y_mode = IM_RGB_TO_YUV_BT601_LIMIT;
-        }
-
-        /* special config for rgb + rgb => yuv on dst */
-        /* src0 bupass, src1 bupass, dst y2r */
-        if (NormalRgaIsRgbFormat(RkRgaGetRgaFormat(relSrcRect.format)) &&
-            NormalRgaIsRgbFormat(RkRgaGetRgaFormat(relSrc1Rect.format)) &&
-            NormalRgaIsYuvFormat(RkRgaGetRgaFormat(relDstRect.format)))
-            r2y_mode = IM_RGB_TO_YUV_BT601_LIMIT;
-    } else {
-        /* special config for yuv to rgb */
-        if (NormalRgaIsYuvFormat(RkRgaGetRgaFormat(relSrcRect.format)) &&
-            NormalRgaIsRgbFormat(RkRgaGetRgaFormat(relDstRect.format)))
-            y2r_mode = IM_YUV_TO_RGB_BT601_LIMIT;
-
-        /* special config for rgb to yuv */
-        if (NormalRgaIsRgbFormat(RkRgaGetRgaFormat(relSrcRect.format)) &&
-            NormalRgaIsYuvFormat(RkRgaGetRgaFormat(relDstRect.format)))
-            r2y_mode = IM_RGB_TO_YUV_BT601_LIMIT;
-    }
-
-    if (dst->color_space_mode & IM_YUV_TO_RGB_MASK)
-        y2r_mode = dst->color_space_mode & IM_YUV_TO_RGB_MASK;
-    if (dst->color_space_mode & IM_RGB_TO_YUV_MASK)
-        r2y_mode = dst->color_space_mode & IM_RGB_TO_YUV_MASK;
-
-    if (dst->color_space_mode & full_csc_mask) {
-        ret = NormalRgaFullColorSpaceConvert(&rgaReg, dst->color_space_mode & full_csc_mask);
-        if (ret < 0) {
-            ALOGE("Not support full csc mode [%x]\n", dst->color_space_mode & full_csc_mask);
-            return -EINVAL;
-        }
-
-        if ((dst->color_space_mode & full_csc_mask) == rgb2yuv_709_limit)
-            r2y_mode = IM_RGB_TO_YUV_BT709_LIMIT;
-    }
-
-    yuvToRgbMode = r2y_mode | y2r_mode;
-
     /* mode
      * interp:set different algorithm to scale.
      * rotateMode:rotation mode
@@ -4472,13 +4356,6 @@ int generate_fill_req(struct rga_req *ioc_req, rga_info_t *dst) {
 
             break;
     }
-
-    if (NormalRgaIsYuvFormat(RkRgaGetRgaFormat(relDstRect.format))) {
-        rgaReg.yuv2rgb_mode |= 0x2 << 2;
-    }
-
-    if(dst->color_space_mode > 0)
-        rgaReg.yuv2rgb_mode = dst->color_space_mode;
 
     NormalRgaSetDstActiveInfo(&rgaReg, dstActW, dstActH, dstXPos, dstYPos);
 
