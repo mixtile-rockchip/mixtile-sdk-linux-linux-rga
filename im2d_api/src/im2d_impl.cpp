@@ -364,6 +364,15 @@ static IM_STATUS rga_support_info_merge_table(rga_info_table_entry *dst_table, r
     dst_table->performance          = MAX(dst_table->performance, merge_table->performance);
     dst_table->scale_ver_bicubic_limit = MAX(dst_table->scale_ver_bicubic_limit,
                                              merge_table->scale_ver_bicubic_limit);
+    /*
+     *   Currently, this only applies to full_csc. In the future,
+     * plan to perform validation on a per-core basis, rather than merging
+     * them into a single table.
+     */
+    if (dst_table->pixel_depth > 0)
+        dst_table->pixel_depth = MIN(dst_table->pixel_depth, merge_table->pixel_depth);
+    else
+        dst_table->pixel_depth = merge_table->pixel_depth;
 
     return IM_STATUS_SUCCESS;
 }
@@ -918,7 +927,7 @@ IM_STATUS rga_get_info(struct rga_hw_versions_t *version, rga_info_table_entry *
                                                   IM_RGA_SUPPORT_FORMAT_Y4;
                     merge_table.feature |= IM_RGA_SUPPORT_FEATURE_QUANTIZE |
                                             IM_RGA_SUPPORT_FEATURE_SRC1_R2Y_CSC |
-                                            IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC;
+                                            IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V1;
                     break;
                 default :
                     goto TRY_TO_COMPATIBLE;
@@ -938,7 +947,7 @@ IM_STATUS rga_get_info(struct rga_hw_versions_t *version, rga_info_table_entry *
                                                  IM_RGA_SUPPORT_FORMAT_Y4;
                     merge_table.feature |= IM_RGA_SUPPORT_FEATURE_QUANTIZE |
                                            IM_RGA_SUPPORT_FEATURE_SRC1_R2Y_CSC |
-                                           IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC |
+                                           IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V2 |
                                            IM_RGA_SUPPORT_FEATURE_MOSAIC |
                                            IM_RGA_SUPPORT_FEATURE_OSD |
                                            IM_RGA_SUPPORT_FEATURE_PRE_INTR;
@@ -961,7 +970,7 @@ IM_STATUS rga_get_info(struct rga_hw_versions_t *version, rga_info_table_entry *
                                                  IM_RGA_SUPPORT_FORMAT_Y4;
                     merge_table.feature |= IM_RGA_SUPPORT_FEATURE_QUANTIZE |
                                            IM_RGA_SUPPORT_FEATURE_SRC1_R2Y_CSC |
-                                           IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC |
+                                           IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V2 |
                                            IM_RGA_SUPPORT_FEATURE_MOSAIC |
                                            IM_RGA_SUPPORT_FEATURE_OSD |
                                            IM_RGA_SUPPORT_FEATURE_PRE_INTR;
@@ -984,7 +993,7 @@ IM_STATUS rga_get_info(struct rga_hw_versions_t *version, rga_info_table_entry *
                                                  IM_RGA_SUPPORT_FORMAT_Y4;
                     merge_table.feature |= IM_RGA_SUPPORT_FEATURE_QUANTIZE |
                                            IM_RGA_SUPPORT_FEATURE_SRC1_R2Y_CSC |
-                                           IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC |
+                                           IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V2 |
                                            IM_RGA_SUPPORT_FEATURE_MOSAIC |
                                            IM_RGA_SUPPORT_FEATURE_OSD |
                                            IM_RGA_SUPPORT_FEATURE_PRE_INTR;
@@ -1009,7 +1018,7 @@ IM_STATUS rga_get_info(struct rga_hw_versions_t *version, rga_info_table_entry *
                                                 IM_RGA_SUPPORT_FORMAT_ALPHA_8_BIT;
                     merge_table.output_format |= IM_RGA_SUPPORT_FORMAT_YUV_400;
                     merge_table.feature |= IM_RGA_SUPPORT_FEATURE_SRC1_R2Y_CSC |
-                                           IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC |
+                                           IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V2 |
                                            IM_RGA_SUPPORT_FEATURE_GAUSS;
                     merge_table.feature &= ~IM_RGA_SUPPORT_FEATURE_ROP;
                     merge_table.scale_ver_bicubic_limit = 600;
@@ -1102,6 +1111,7 @@ IM_STATUS rga_get_info(struct rga_hw_versions_t *version, rga_info_table_entry *
                                                  IM_RGA_SUPPORT_FORMAT_Y1;
                     merge_table.feature |= IM_RGA_SUPPORT_FEATURE_SECURE | IM_RGA_SUPPORT_FEATURE_CFA;
                     merge_table.feature &= ~(IM_RGA_SUPPORT_FEATURE_QUANTIZE | IM_RGA_SUPPORT_FEATURE_ROP);
+                    merge_table.pixel_depth = 10;
                     break;
                 default :
                     goto TRY_TO_COMPATIBLE;
@@ -1122,6 +1132,7 @@ IM_STATUS rga_get_info(struct rga_hw_versions_t *version, rga_info_table_entry *
                                                  IM_RGA_SUPPORT_FORMAT_YUV_444_PACED_10_BIT;
                     merge_table.feature |= IM_RGA_SUPPORT_FEATURE_SECURE;
                     merge_table.feature &= ~(IM_RGA_SUPPORT_FEATURE_QUANTIZE | IM_RGA_SUPPORT_FEATURE_ROP);
+                    merge_table.pixel_depth = 10;
                     break;
                 default :
                     goto TRY_TO_COMPATIBLE;
@@ -2100,7 +2111,7 @@ static int rga_get_csc_mode(rga_info_table_entry *entry, int in, int out)
                     mode = IM_RGB_TO_YUV_BT601_FULL;
                     break;
                 case IM_YUV_BT709_LIMIT_RANGE:
-                    if (entry->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC)
+                    if (entry->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_MASK)
                         mode = rgb2yuv_709_limit;
                     else
                         mode = IM_RGB_TO_YUV_BT709_LIMIT;
@@ -2694,7 +2705,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
             is_yuv_format(dst.format)) {
             /* When configured as 709_limit, full_csc of RGA2 is preferred. */
             if (((dst.color_space_mode & IM_RGB_TO_YUV_MASK) == IM_RGB_TO_YUV_BT709_LIMIT) &&
-                (session->hardware_info.feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC)) {
+                (session->hardware_info.feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_MASK)) {
                 dstinfo.color_space_mode = (dst.color_space_mode & IM_YUV_TO_RGB_MASK) | rgb2yuv_709_limit;
             } else {
                 dstinfo.color_space_mode = dst.color_space_mode;
@@ -2734,7 +2745,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
                    is_yuv_format(dst.format)) {
             /* When configured as 709_limit, full_csc of RGA2 is preferred. */
             if (((dst.color_space_mode & IM_RGB_TO_YUV_MASK) == IM_RGB_TO_YUV_BT709_LIMIT) &&
-                (session->hardware_info.feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC)) {
+                (session->hardware_info.feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_MASK)) {
                 dstinfo.color_space_mode = rgb2yuv_709_limit;
             } else {
                 dstinfo.color_space_mode = dst.color_space_mode;

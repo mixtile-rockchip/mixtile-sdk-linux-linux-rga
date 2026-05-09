@@ -513,7 +513,7 @@ IM_API const char* querystring(int name) {
         "ROP ",
         "quantize ",
         "src1_r2y_csc ",
-        "dst_full_csc ",
+        "dst_full_csc_v1 ",
         "FBC_mode ",
         "blend_in_YUV ",
         "BT.2020 ",
@@ -524,6 +524,8 @@ IM_API const char* querystring(int name) {
         "gauss ",
         "secure_access ",
         "CFA ",
+        "dst_full_csc_v2 ",
+        "dst_full_csc_v3 ",
     };
     const char *performance[] = {
         "unknown",
@@ -758,8 +760,8 @@ IM_API const char* querystring(int name) {
                     out << feature[IM_RGA_SUPPORT_FEATURE_QUANTIZE_INDEX];
                 if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_SRC1_R2Y_CSC)
                     out << feature[IM_RGA_SUPPORT_FEATURE_SRC1_R2Y_CSC_INDEX];
-                if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC)
-                    out << feature[IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_INDEX];
+                if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V1)
+                    out << feature[IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V1_INDEX];
                 if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_FBC)
                     out << feature[IM_RGA_SUPPORT_FEATURE_FBC_INDEX];
                 if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_BLEND_YUV)
@@ -780,6 +782,10 @@ IM_API const char* querystring(int name) {
                     out << feature[IM_RGA_SUPPORT_FEATURE_SECURE_INDEX];
                 if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_CFA)
                     out << feature[IM_RGA_SUPPORT_FEATURE_CFA_INDEX];
+                if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V2)
+                    out << feature[IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V2_INDEX];
+                if(rga_info->feature & IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V3)
+                    out << feature[IM_RGA_SUPPORT_FEATURE_DST_FULL_CSC_V3_INDEX];
                 out << endl;
                 break;
 
