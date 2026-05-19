@@ -3178,12 +3178,12 @@ im2d_api/im2d_type.h
 
 ```c++
 typedef struct im_nn {
-    int scale_r;                /* scaling factor on R channal */
-    int scale_g;                /* scaling factor on G channal */
-    int scale_b;                /* scaling factor on B channal */
-    int offset_r;               /* offset on R channal */
-    int offset_g;               /* offset on G channal */
-    int offset_b;               /* offset on B channal */
+  int scale_r;                /* scaling factor on R channel */
+  int scale_g;                /* scaling factor on G channel */
+  int scale_b;                /* scaling factor on B channel */
+  int offset_r;               /* offset on R channel */
+  int offset_g;               /* offset on G channel */
+  int offset_b;               /* offset on B channel */
 } im_nn_t;
 ```
 
@@ -3384,7 +3384,7 @@ typedef struct im_osd_invert {
                                 //   IM_OSD_INVERT_CHANNEL_ALPHA
                                 //   IM_OSD_INVERT_CHANNEL_COLOR
                                 //   IM_OSD_INVERT_CHANNEL_BOTH
-    int flags_mode;             // use external or inertnal RAM invert flags
+    int flags_mode;             // use external or internal RAM invert flags
                                 //   IM_OSD_FLAGS_EXTERNAL
                                 //   IM_OSD_FLAGS_INTERNAL
     int flags_index;            // flags index when using internal RAM invert flags
@@ -3397,7 +3397,7 @@ typedef struct im_osd_invert {
                                 //   IM_OSD_INVERT_USE_SWAP
     im_osd_invert_factor_t factor;
 
-    int threash;
+    int threshold;
 } im_osd_invert_t;
 ```
 
@@ -3410,7 +3410,7 @@ typedef struct im_osd_invert {
 | current_flags  | 当前task统计的反色配置表，共64个bit，task执行结束后读取。    |
 | invert_mode    | 反色模式：<br />    自定义公式：IM_OSD_INVERT_USE_FACTOR<br />    默认公式：IM_OSD_INVERT_USE_SWAP，YUV格式对U、V分量进行交换，RGB格式对R、B分量进行交换。 |
 | factor         | 反色公式配置。                                               |
-| threash        | 反色阈值。                                                   |
+| threshold      | 反色阈值。          |
 
 - **注意事项**
 

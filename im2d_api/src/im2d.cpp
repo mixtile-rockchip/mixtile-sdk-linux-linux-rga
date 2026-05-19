@@ -124,7 +124,7 @@ IM_API const char* imStrError_t(IM_STATUS status) {
             break;
 
         default :
-            return "unkown status";
+            return "unknown status";
     }
 
     snprintf(error_str, IM_ERR_MSG_LEN, "%s: %s", ptr, g_rga_err_str);

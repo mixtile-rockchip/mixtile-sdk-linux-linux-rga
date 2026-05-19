@@ -356,12 +356,12 @@ typedef struct {
 
 
 typedef struct im_nn {
-    int scale_r;                /* scaling factor on R channal */
-    int scale_g;                /* scaling factor on G channal */
-    int scale_b;                /* scaling factor on B channal */
-    int offset_r;               /* offset on R channal */
-    int offset_g;               /* offset on G channal */
-    int offset_b;               /* offset on B channal */
+    int scale_r;                /* scaling factor on R channel */
+    int scale_g;                /* scaling factor on G channel */
+    int scale_b;                /* scaling factor on B channel */
+    int offset_r;               /* offset on R channel */
+    int offset_g;               /* offset on G channel */
+    int offset_b;               /* offset on B channel */
 } im_nn_t;
 
 /* im_info definition */
@@ -461,7 +461,7 @@ typedef struct im_osd_invert {
                                 //   IM_OSD_INVERT_CHANNEL_ALPHA
                                 //   IM_OSD_INVERT_CHANNEL_COLOR
                                 //   IM_OSD_INVERT_CHANNEL_BOTH
-    int flags_mode;             // use external or inertnal RAM invert flags
+    int flags_mode;             // use external or internal RAM invert flags
                                 //   IM_OSD_FLAGS_EXTERNAL
                                 //   IM_OSD_FLAGS_INTERNAL
     int flags_index;            // flags index when using internal RAM invert flags
@@ -474,7 +474,10 @@ typedef struct im_osd_invert {
                                 //   IM_OSD_INVERT_USE_SWAP
     im_osd_invert_factor_t factor;
 
-    int threash;
+    union {
+        int threash;            // Deprecated typo, do not use.
+        int threshold;
+    };
 } im_osd_invert_t;
 
 typedef struct im_osd {

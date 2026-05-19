@@ -2684,7 +2684,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
             srcinfo.osd_info.cal_factor.yg_max = opt.osd_config.invert_config.factor.yg_max;
             srcinfo.osd_info.cal_factor.yg_min = opt.osd_config.invert_config.factor.yg_min;
         }
-        srcinfo.osd_info.mode_ctrl.invert_thresh = opt.osd_config.invert_config.threash;
+        srcinfo.osd_info.mode_ctrl.invert_thresh = opt.osd_config.invert_config.threshold;
     }
 
     /* set NN quantize */

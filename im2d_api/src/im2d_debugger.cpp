@@ -228,10 +228,10 @@ static void rga_dump_osd_info(int log_level, const im_osd_t *osd_info) {
            osd_info->block_parm.normal_color.value, osd_info->block_parm.invert_color.value);
 
     IM_LOG(log_level, "\t\tinvert_config:");
-    IM_LOG(log_level, "\t\t\tchannel[0x%x], flags_mode[0x%x], flages_index[%d] threash[0x%x]",
+        IM_LOG(log_level, "\t\t\tchannel[0x%x], flags_mode[0x%x], flags_index[%d] threshold[0x%x]",
            osd_info->invert_config.invert_channel, osd_info->invert_config.flags_mode,
-           osd_info->invert_config.flags_index, osd_info->invert_config.threash);
-    IM_LOG(log_level, "\t\t\tflages: invert[0x%llx], current[0x%llx]",
+           osd_info->invert_config.flags_index, osd_info->invert_config.threshold);
+        IM_LOG(log_level, "\t\t\tflags: invert[0x%llx], current[0x%llx]",
            (unsigned long long)osd_info->invert_config.invert_flags,
            (unsigned long long)osd_info->invert_config.current_flags);
     IM_LOG(log_level, "\t\t\tinvert_mode[%x]",
