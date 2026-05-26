@@ -2344,11 +2344,14 @@ static int rga_generate_csc_config(struct rga_req *req, rga_info_table_entry *ha
     bool is_fill = (usage & IM_COLOR_FILL) ? true : false;
     struct rga_csc_convert_mode convert_mode = {};
 
-    /*
-     * Convert to RGB space by default for blending, YUV blending is
-     * currently not supported.
-     */
-    if (is_blend) {
+    if (usage & IM_UPDATE_LUT){
+        /* No need CSC for LUT table. */
+        return IM_STATUS_SUCCESS;
+    } else if (is_blend) {
+        /*
+         * Convert to RGB space by default for blending, YUV blending is
+         * currently not supported.
+         */
         mode = rga_get_csc_mode(hardware,
                                 src->color_space_mode,
                                 IM_RGB_FULL_RANGE);
