@@ -1792,6 +1792,62 @@ IM_STATUS rga_check_feature(rga_buffer_t src, rga_buffer_t pat, rga_buffer_t dst
     return IM_STATUS_NOERROR;
 }
 
+static IM_STATUS rga_check_cfa_limit(const rga_buffer_t *src, const rga_buffer_t *dst,
+                                     const im_cfa_t *cfa) {
+    float bpp;
+    const struct rga_cfa_c2p_info *c2p_info;
+
+    if (src == NULL || dst == NULL || cfa == NULL)
+        return IM_STATUS_ILLEGAL_PARAM;
+
+    if ((src->width % 4) != 0) {
+        IM_LOGE("RKCFA does not support src width[%d] is non-4 aligned\n", src->width);
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    if ((dst->width % 4) != 0) {
+        IM_LOGE("RKCFA does not support dst width[%d] is non-4 aligned\n", dst->width);
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    if (src->width != dst->width || src->height != dst->height) {
+        IM_LOGW("RKCFA does not support scale, src[w,h] = [%d, %d], dst[w,h] = [%d, %d]",
+                src->width, src->height, dst->width, dst->height);
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    bpp = get_bpp_from_format(src->format);
+    if (bpp == 0) {
+        IM_LOGW("RKCFA does not support src format[%s]", translate_format_str(src->format));
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    if ((int)(src->wstride * bpp) % 16 != 0) {
+        IM_LOGW("RKCFA does not support src width_stride[%d] format[%s] is non-%d aligned",
+            src->wstride, translate_format_str(src->format), (int)(16 / bpp));
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    bpp = get_bpp_from_format(dst->format);
+    if (bpp == 0) {
+        IM_LOGW("RKCFA does not support dst format[%s]", translate_format_str(dst->format));
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    if ((int)(dst->wstride * bpp) % 16 != 0) {
+        IM_LOGW("RKCFA does not support dst width_stride[%d] format[%s] is non-%d aligned",
+            dst->wstride, translate_format_str(dst->format), (int)(16 / bpp));
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    if (dst->format == RK_FORMAT_Y1 && cfa->type != IM_CFA_TYPE_A2) {
+        IM_LOGW("RKCFA only support output Y1 with 'IM_CFA_TYPE_A2'., cfa_type = %#x", cfa->type);
+        return IM_STATUS_NOT_SUPPORTED;
+    }
+
+    return IM_STATUS_NOERROR;
+}
+
 IM_STATUS rga_check(const rga_buffer_t src, const rga_buffer_t dst, const rga_buffer_t pat,
                     const im_rect src_rect, const im_rect dst_rect, const im_rect pat_rect, uint64_t mode_usage) {
     bool pat_enable = 0;
@@ -2854,8 +2910,15 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
         goto release_resource;
     }
 
-    if (usage & IM_CFA)
-        rga_generate_cfa_config(&req, &src, &dst, &opt_ptr->cfa_config);
+    if (usage & IM_CFA) {
+        ret = rga_check_cfa_limit(&src, &dst, &opt.cfa_config);
+        if (ret != IM_STATUS_NOERROR)
+            goto release_resource;
+
+        ret = rga_generate_cfa_config(&req, &src, &dst, &opt.cfa_config);
+        if (ret != IM_STATUS_SUCCESS)
+            goto release_resource;
+    }
 
     if (buffer_mask & RGA_TASK_BUFFER_SRC1_EN)
         ret = rga_generate_csc_config(&req, &session->hardware_info, &src, &pat, &dst, usage);
