@@ -2,9 +2,9 @@
 
 ID: RK-KF-YF-403
 
-Release Version: V2.2.9
+Release Version: V2.2.10
 
-Release Date: 2025-12-24
+Release Date: 2026-05-13
 
 Security Level: □Top-Secret   □Secret   □Internal   ■Public
 
@@ -60,6 +60,7 @@ This document (this guide) is mainly intended for:
 | 2025/04/30 | 2.2.7 | Yu Qiaowei | Fixed over-constraints on actual_height in the description of RK3506/RV1103B |
 | 2025/06/10 | 2.2.8 | Yu Qiaowei | - Add chip RK1820 introduction<br />- Remove chip codename |
 | 2025/12/24 | 2.2.9 | Yu Qiaowei | Add chip RK3538 introduction |
+| 2026/05/13 | 2.2.10 | Yu Qiaowei | - Add chip RK3572 introduction<br/>- Update description of the flags parameter in imbeginJob()<br/>- Add descriptions for newly added member variables in im_opt_t |
 
 ---
 
