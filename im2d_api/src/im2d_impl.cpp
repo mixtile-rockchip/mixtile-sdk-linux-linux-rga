@@ -2631,7 +2631,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
         }
 
         if(srcinfo.rotation ==0)
-            IM_LOGE("rga_im2d: Could not find rotate/flip usage : 0x%" PRIu64 " \n", usage);
+            IM_LOGE("rga_im2d: Could not find rotate/flip usage : 0x%" PRIx64 " \n", usage);
     }
 
     /* set 5551 Alpha bit */
@@ -2685,7 +2685,7 @@ IM_STATUS rga_task_submit(im_job_handle_t job_handle, rga_buffer_t src, rga_buff
             srcinfo.blend |= (1 << 12);
 
         if(srcinfo.blend == 0)
-            IM_LOGE("rga_im2d: Could not find blend usage : 0x%" PRIu64 " \n", usage);
+            IM_LOGE("rga_im2d: Could not find blend usage : 0x%" PRIx64 " \n", usage);
 
         /* set global alpha */
         srcinfo.blend |= (src.global_alpha & 0xff) << 16;

@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include "im2d_debugger.h"
 #include "im2d_impl.h"
@@ -277,10 +278,10 @@ void rga_dump_image(int log_level,
     IM_LOG(log_level, "----------+------------------+----------------------------+----------------------------+-------------------------+----------------------------------------------------------------+----------------------------+--------------");
 }
 
-void rga_dump_opt(int log_level, const im_opt_t *opt, const int usage) {
+void rga_dump_opt(int log_level, const im_opt_t *opt, const uint64_t usage) {
     log_level |= IM_LOG_FORCE;
 
-    IM_LOG(log_level, "usage[0x%x]", usage);
+    IM_LOG(log_level, "usage[0x%" PRIx64 "]", usage);
     IM_LOG(log_level, "option:");
 
     IM_LOG(log_level, "\tapi_version[0x%x]", opt->version);
@@ -292,17 +293,17 @@ void rga_dump_opt(int log_level, const im_opt_t *opt, const int usage) {
         IM_LOG(log_level, "\tjob_mode[aync]");
 
     if (usage & IM_HAL_TRANSFORM_ROT_MASK)
-        IM_LOG(log_level, "\trotate[%s(0x%x)]",
+        IM_LOG(log_level, "\trotate[%s(0x%" PRIx64 ")]",
                string_rotate_mode(usage & IM_HAL_TRANSFORM_ROT_MASK),
                usage & IM_HAL_TRANSFORM_ROT_MASK);
 
     if (usage & IM_HAL_TRANSFORM_FLIP_MASK)
-        IM_LOG(log_level, "\tmirror[%s(0x%x)]",
+        IM_LOG(log_level, "\tmirror[%s(0x%" PRIx64 ")]",
                string_flip_mode(usage & IM_HAL_TRANSFORM_FLIP_MASK),
                usage & IM_HAL_TRANSFORM_FLIP_MASK);
 
     if (usage & IM_ALPHA_BLEND_MASK)
-        IM_LOG(log_level, "\tblend_mode[%s(0x%x)], pre-mul[%s]",
+        IM_LOG(log_level, "\tblend_mode[%s(0x%" PRIx64 ")], pre-mul[%s]",
                string_blend_mode(usage & IM_ALPHA_BLEND_MASK), usage & IM_ALPHA_BLEND_MASK,
                (usage & IM_ALPHA_BLEND_PRE_MUL) ? "true" : "false");
 
@@ -317,7 +318,7 @@ void rga_dump_opt(int log_level, const im_opt_t *opt, const int usage) {
 
     if (usage & IM_ALPHA_COLORKEY_MASK) {
         IM_LOG(log_level, "\tcolor_key:");
-        IM_LOG(log_level, "\t\tmode[%s(0x%x)], color_range[min,max] = [0x%x, 0x%x] ",
+        IM_LOG(log_level, "\t\tmode[%s(0x%" PRIx64 ")], color_range[min,max] = [0x%x, 0x%x] ",
                string_colorkey_mode(usage & IM_ALPHA_COLORKEY_MASK),
                usage & IM_ALPHA_COLORKEY_MASK,
                opt->colorkey_range.min, opt->colorkey_range.max);
@@ -354,7 +355,7 @@ void rga_dump_info(int log_level,
                    const rga_buffer_t *src, const rga_buffer_t *dst, const rga_buffer_t *pat,
                    const im_rect *srect, const im_rect *drect, const im_rect *prect,
                    const int acquire_fence_fd, const int *release_fence_fd,
-                   const im_opt_t *opt_ptr, const int usage) {
+                   const im_opt_t *opt_ptr, const uint64_t usage) {
     IM_LOG(log_level, "job_handle[%#x], aquire_fence[%d(%#x)], release_fence_ptr[%p]",
            job_handle, acquire_fence_fd, acquire_fence_fd, release_fence_fd);
 
