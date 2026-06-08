@@ -29,6 +29,8 @@ const char *string_flip_mode(uint32_t flip);
 const char *string_mosaic_mode(uint32_t mode);
 const char *string_rop_mode(uint32_t mode);
 const char *string_colorkey_mode(uint32_t mode);
+const char * string_cfa_type(uint32_t type);
+const char * string_cfa_pattern(uint32_t pattern);
 
 void rga_dump_image(int log_level,
                     const rga_buffer_t *src, const rga_buffer_t *dst, const rga_buffer_t *pat,

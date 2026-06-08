@@ -202,6 +202,40 @@ const char *string_colorkey_mode(uint32_t mode) {
     }
 }
 
+const char * string_cfa_type(uint32_t type) {
+    switch (type) {
+        case IM_CFA_TYPE_DEFAULT:
+            return "default";
+        case IM_CFA_TYPE_REGAL:
+            return "regal";
+        case IM_CFA_TYPE_A2:
+            return "A2";
+        default:
+            return "unknown";
+    }
+}
+
+const char * string_cfa_pattern(uint32_t pattern) {
+    switch (pattern) {
+        case IM_CFA_PATTERN_GRAY:
+            return "gray";
+        case IM_CFA_PATTERN_3x3_RGBGBRBRG:
+            return "3x3 RGBGBRBRG";
+        case IM_CFA_PATTERN_3x3_GBRBRGRGB:
+            return "3x3 GBRBRGRGB";
+        case IM_CFA_PATTERN_3x3_RBGGRBBGR:
+            return "3x3 RBGGRBBGR";
+        case IM_CFA_PATTERN_2x2_BWGR:
+            return "2x2 BWGR";
+        case IM_CFA_PATTERN_2x2_RGWB:
+            return "2x2 RGWB";
+        case IM_CFA_PATTERN_2x6_GBBRRGRRGGBB:
+            return "2x6 GBBRRGRRGGBB";
+        default:
+            return "unknown";
+    }
+}
+
 static void rga_dump_channel_info_tabular(int log_level, const char *name,
                                           const im_rect *rect, const rga_buffer_t *image) {
     log_level |= IM_LOG_FORCE;
@@ -247,6 +281,31 @@ static void rga_dump_osd_info(int log_level, const im_osd_t *osd_info) {
     IM_LOG(log_level, "\t\t\tac_swap[0x%x], endian_swap[0x%x], color0[0x%x], color1[0x%x]",
            osd_info->bpp2_info.ac_swap, osd_info->bpp2_info.endian_swap,
            osd_info->bpp2_info.color0.value, osd_info->bpp2_info.color1.value);
+}
+
+static void rga_dump_cfa_info(int log_level, const im_cfa_t *cfa_config) {
+    IM_LOG(log_level, "\tCFA:");
+
+    IM_LOG(log_level, "\t\ttype[%s(0x%x)], pattern[%s(0x%x)]",
+           string_cfa_type(cfa_config->type), cfa_config->type,
+           string_cfa_pattern(cfa_config->pattern), cfa_config->pattern);
+    IM_LOG(log_level, "\t\tsrc1_handle[0x%x], dst1_handle[0x%x]",
+           cfa_config->src1_handle, cfa_config->dst1_handle);
+           IM_LOG(log_level, "\t\tbcsh[%s], dither[%s], clear_low_4bit[%s]",
+           cfa_config->bcsh_en ? "enable" : "disable",
+           (cfa_config->dither & IM_CFA_DITHER_FLAG_ENABLE) ? "enable" : "disable",
+           (cfa_config->dither & IM_CFA_DITHER_FLAG_CLEAR_LOW_4BITS) ? "true" : "false");
+    IM_LOG(log_level, "\t\tsaturation_gain[0x%x], sharpen_gain[0x%x], comps_level[0x%x]",
+           cfa_config->saturation_gain, cfa_config->sharpen_gain, cfa_config->comps_level);
+    IM_LOG(log_level, "\t\tfilter:");
+    IM_LOG(log_level, "\t\t\tmedian[%s], high_pass[%s]",
+           (cfa_config->filter & IM_CFA_FILTER_MEDIAN) ? "enable" : "disable",
+           (cfa_config->filter & IM_CFA_FILTER_HIGH_PASS) ? "enable" : "disable");
+    IM_LOG(log_level, "\t\ta2_modulate:");
+    IM_LOG(log_level, "\t\t\tLPS[%s], HPS[%s], ERR[%s]",
+           (cfa_config->a2_modulate & IM_CFA_A2_MODULATE_LPS) ? "enable" : "disable",
+           (cfa_config->a2_modulate & IM_CFA_A2_MODULATE_HPS) ? "enable" : "disable",
+           (cfa_config->a2_modulate & IM_CFA_A2_MODULATE_ERR) ? "enable" : "disable");
 }
 
 static void rga_dump_gauss_matrix(int log_level, im_size_t ksize, double *matrix) {
@@ -348,6 +407,9 @@ void rga_dump_opt(int log_level, const im_opt_t *opt, const uint64_t usage) {
                opt->gauss_config.sigma_x, opt->gauss_config.sigma_y);
         rga_dump_gauss_matrix(log_level, opt->gauss_config.ksize,opt->gauss_config.matrix);
     }
+
+    if (usage & IM_CFA)
+        rga_dump_cfa_info(log_level, &opt->cfa_config);
 }
 
 void rga_dump_info(int log_level,
