@@ -1495,6 +1495,7 @@ IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t src1, rg
 
     usage |= IM_CFA;
 
+    opt.version = RGA_CURRENT_API_VERSION;
     memcpy(&opt.cfa_config, cfa_config, sizeof(im_cfa_t));
     opt.cfa_config.src1_handle = src1.handle;
     opt.cfa_config.dst1_handle = dst1.handle;
@@ -1534,6 +1535,7 @@ IM_API IM_STATUS imcfa(rga_buffer_t src, rga_buffer_t dst, rga_buffer_t BCSH_tab
         }
     }
 
+    opt.version = RGA_CURRENT_API_VERSION;
     memcpy(&opt.cfa_config, cfa_config, sizeof(im_cfa_t));
     opt.cfa_config.src1_handle = pre_comps.handle;
     opt.cfa_config.dst1_handle = next_comps.handle;
